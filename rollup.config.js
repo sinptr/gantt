@@ -3,6 +3,22 @@ import uglify from 'rollup-plugin-uglify';
 import merge from 'deepmerge';
 import babel from 'rollup-plugin-babel';
 
+// TODO: write better config
+const enums = {
+    input: 'src/enums.js',
+    output: {
+        name: 'Enums',
+        file: 'dist/enums.js',
+        format: 'umd'
+    },
+    plugins: [
+        babel({
+            exclude: 'node_modules/**'
+        }),
+        uglify()
+    ]
+};
+
 const dev = {
     input: 'src/index.js',
     output: {
@@ -19,6 +35,7 @@ const dev = {
         })
     ]
 };
+
 const prod = merge(dev, {
     output: {
         file: 'dist/frappe-gantt.min.js'
@@ -26,4 +43,4 @@ const prod = merge(dev, {
     plugins: [uglify()]
 });
 
-export default [dev, prod];
+export default [enums, dev, prod];

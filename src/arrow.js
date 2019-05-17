@@ -1,16 +1,85 @@
 import { createSVG } from './svg_utils';
+import Enums from './enums';
 
 export default class Arrow {
-    constructor(gantt, from_task, to_task) {
+    constructor(gantt, from_task, to_task, type) {
         this.gantt = gantt;
         this.from_task = from_task;
         this.to_task = to_task;
+        this.type = type;
 
         this.calculate_path();
         this.draw();
+        this.bind_events();
+        this.setup_events();
+    }
+
+    bind_events() {
+        this.handle_dblclick = this.handle_dblclick.bind(this);
+        this.handle_mouseover = this.handle_mouseover.bind(this);
     }
 
     calculate_path() {
+        const { dependency: { types } } = Enums;
+        let start_x;
+        let start_padding;
+        let typeSign;
+        const padding = 10;
+        switch (this.type) {
+            case types.START_TO_START:
+                start_x = this.from_task.$bar.getX();
+                start_padding = -padding;
+                typeSign = -1;
+                break;
+            case types.END_TO_START:
+                start_x = this.from_task.$bar.getEndX();
+                start_padding = padding;
+                typeSign = 1;
+                break;
+            default:
+                start_x = this.from_task.$bar.getX();
+                start_padding = -padding;
+                typeSign = -1;
+        }
+        const start_y =
+            this.from_task.$bar.getY() + this.from_task.$bar.getHeight() / 2;
+        const end_x = this.to_task.$bar.getX();
+        const end_y =
+            this.to_task.$bar.getY() + this.to_task.$bar.getHeight() / 2;
+
+        const arrowPath = `
+                m -5 -5
+                l 5 5
+                l -5 5`;
+
+        if (start_x + start_padding >= end_x) {
+            const from_is_below_to =
+                this.from_task.task._index > this.to_task.task._index;
+            let offset =
+                this.to_task.$bar.getHeight() / 2 +
+                this.gantt.options.padding / 2;
+            const sign = from_is_below_to ? -1 : 1;
+            offset *= sign;
+
+            this.path = `
+                M ${start_x} ${start_y}
+                h ${start_padding}
+                V ${end_y - offset}
+                H ${end_x - start_padding * typeSign}
+                V ${end_y}
+                L ${end_x} ${end_y}
+                ${arrowPath}`;
+        } else {
+            this.path = `
+                M ${start_x} ${start_y}
+                h ${start_padding}
+                V ${end_y}
+                L ${end_x} ${end_y}
+                ${arrowPath}`;
+        }
+    }
+
+    calculate_path_old() {
         let start_x =
             this.from_task.$bar.getX() + this.from_task.$bar.getWidth() / 2;
 
@@ -82,15 +151,51 @@ export default class Arrow {
     }
 
     draw() {
-        this.element = createSVG('path', {
+        this.element = createSVG('g', {});
+        this.hover = createSVG('path', {
+            class: 'hover-area',
             d: this.path,
             'data-from': this.from_task.task.id,
-            'data-to': this.to_task.task.id
+            'data-to': this.to_task.task.id,
+            append_to: this.element
+        });
+        this.arrow = createSVG('path', {
+            class: 'arrow',
+            d: this.path,
+            'data-from': this.from_task.task.id,
+            'data-to': this.to_task.task.id,
+            append_to: this.element
         });
     }
 
     update() {
         this.calculate_path();
-        this.element.setAttribute('d', this.path);
+        this.arrow.setAttribute('d', this.path);
+        this.hover.setAttribute('d', this.path);
+    }
+
+    setup_events() {
+        this.hover.addEventListener('dblclick', this.handle_dblclick);
+        this.hover.addEventListener('mouseover', this.handle_mouseover);
+    }
+
+    remove_events() {
+        this.hover.removeEventListener('dblclick', this.handle_dblclick);
+        this.hover.removeEventListener('mouseover', this.handle_mouseover);
+    }
+
+    handle_mouseover() {
+        // place hovered arrow in the end for proper highlight
+        this.element.parentNode.appendChild(this.element);
+    }
+
+    handle_dblclick() {
+        this.delete();
+    }
+
+    delete() {
+        this.gantt.delete_dependency(this.from_task, this.to_task, this.type);
+        this.element.remove();
+        this.remove_events();
     }
 }

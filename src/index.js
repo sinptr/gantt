@@ -3,6 +3,7 @@ import { $, createSVG } from './svg_utils';
 import Bar from './bar';
 import Arrow from './arrow';
 import Popup from './popup';
+import Enums from './enums';
 
 import './gantt.scss';
 
@@ -135,15 +136,11 @@ export default class Gantt {
             }
 
             // dependencies
-            if (typeof task.dependencies === 'string' || !task.dependencies) {
-                let deps = [];
-                if (task.dependencies) {
-                    deps = task.dependencies
-                        .split(',')
-                        .map(d => d.trim())
-                        .filter(d => d);
-                }
-                task.dependencies = deps;
+            try {
+                task.dependencies = new Map(task.dependencies);
+            } catch (e) {
+                // TODO: write meaningful exception
+                throw e;
             }
 
             // uids
@@ -160,7 +157,7 @@ export default class Gantt {
     setup_dependencies() {
         this.dependency_map = {};
         for (let t of this.tasks) {
-            for (let d of t.dependencies) {
+            for (let d of t.dependencies.keys()) {
                 this.dependency_map[d] = this.dependency_map[d] || [];
                 this.dependency_map[d].push(t.id);
             }
@@ -284,7 +281,7 @@ export default class Gantt {
 
     setup_layers() {
         this.layers = {};
-        const layers = ['grid', 'arrow', 'progress', 'bar', 'details', 'date'];
+        const layers = ['grid', 'arrows', 'progress', 'bar', 'details', 'date'];
         // make group layers
         for (let layer of layers) {
             this.layers[layer] = createSVG('g', {
@@ -306,9 +303,8 @@ export default class Gantt {
         const grid_width = this.dates.length * this.options.column_width;
         const grid_height =
             this.options.header_height +
-            this.options.padding +
             (this.options.bar_height + this.options.padding) *
-                this.tasks.length;
+                (this.tasks.length + 1);
 
         createSVG('rect', {
             x: 0,
@@ -320,7 +316,7 @@ export default class Gantt {
         });
 
         $.attr(this.$svg, {
-            height: grid_height + this.options.padding + 100,
+            height: grid_height,
             width: '100%'
         });
     }
@@ -334,7 +330,7 @@ export default class Gantt {
 
         let row_y = this.options.header_height + this.options.padding / 2;
 
-        for (let task of this.tasks) {
+        for (let i = 0; i < this.tasks.length + 1; i++) {
             createSVG('rect', {
                 x: 0,
                 y: row_y,
@@ -375,7 +371,7 @@ export default class Gantt {
         let tick_y = this.options.header_height + this.options.padding / 2;
         let tick_height =
             (this.options.bar_height + this.options.padding) *
-            this.tasks.length;
+            (this.tasks.length + 1);
 
         for (let date of this.dates) {
             let tick_class = 'tick';
@@ -441,7 +437,6 @@ export default class Gantt {
     }
 
     make_dates() {
-
         for (let date of this.get_dates_to_draw()) {
             createSVG('text', {
                 x: date.lower_x,
@@ -472,12 +467,11 @@ export default class Gantt {
 
     get_dates_to_draw() {
         let last_date = null;
-        const dates = this.dates.map((date, i) => {
+        return this.dates.map((date, i) => {
             const d = this.get_date_info(date, last_date, i);
             last_date = date;
             return d;
         });
-        return dates;
     }
 
     get_date_info(date, last_date, i) {
@@ -575,22 +569,31 @@ export default class Gantt {
     make_arrows() {
         this.arrows = [];
         for (let task of this.tasks) {
-            let arrows = [];
-            arrows = task.dependencies
-                .map(task_id => {
-                    const dependency = this.get_task(task_id);
-                    if (!dependency) return;
-                    const arrow = new Arrow(
-                        this,
-                        this.bars[dependency._index], // from_task
-                        this.bars[task._index] // to_task
-                    );
-                    this.layers.arrow.appendChild(arrow.element);
-                    return arrow;
-                })
-                .filter(Boolean); // filter falsy values
+            const arrows = Array.from(task.dependencies, ([task_id, type]) => {
+                const dependency = this.get_task(task_id);
+                if (!dependency) return;
+                const arrow = new Arrow(
+                    this,
+                    this.bars[dependency._index], // from_task
+                    this.bars[task._index], // to_task
+                    type
+                );
+                this.layers.arrows.appendChild(arrow.element);
+                return arrow;
+            }).filter(Boolean); // filter falsy values
             this.arrows = this.arrows.concat(arrows);
         }
+    }
+
+    make_arrow(from_task, to_task, type) {
+        const arrow = new Arrow(
+            this,
+            this.bars[from_task._index], // from_task
+            this.bars[to_task._index], // to_task
+            type
+        );
+        this.layers.arrows.appendChild(arrow.element);
+        this.arrows = [...this.arrows, arrow];
     }
 
     map_arrows_on_bars() {
@@ -602,6 +605,15 @@ export default class Gantt {
                 );
             });
         }
+    }
+
+    map_arrows_on_bar(bar) {
+        bar.arrows = this.arrows.filter(arrow => {
+            return (
+                arrow.from_task.task.id === bar.task.id ||
+                arrow.to_task.task.id === bar.task.id
+            );
+        });
     }
 
     set_width() {
@@ -647,20 +659,78 @@ export default class Gantt {
 
     bind_bar_events() {
         let is_dragging = false;
+        let is_connecting = false;
+        let connecting_type = null;
         let x_on_start = 0;
-        let x_on_scroll_start = 0;
         let y_on_start = 0;
         let is_resizing_left = false;
         let is_resizing_right = false;
         let parent_bar_id = null;
         let bars = []; // instanceof Bar
+        let connecting_bar = null;
         this.bar_being_dragged = null;
 
         function action_in_progress() {
-            return is_dragging || is_resizing_left || is_resizing_right;
+            return (
+                is_dragging ||
+                is_resizing_left ||
+                is_resizing_right ||
+                is_connecting
+            );
         }
 
+        $.on(this.$svg, 'mousedown', '.handle-group .circle', (e, element) => {
+            is_connecting = !is_connecting;
+            const { dependency: { types } } = Enums;
+            const bar_wrapper = $.closest('.bar-wrapper', element);
+            const task_id = bar_wrapper.getAttribute('data-id');
+            const bar = this.get_bar(task_id);
+            if (is_connecting) {
+                connecting_bar = bar;
+                connecting_type = element.classList.contains('left')
+                    ? types.START_TO_START
+                    : types.END_TO_START;
+                element.classList.add('selected');
+                this.$svg.querySelectorAll('.bar-wrapper').forEach(wrapper => {
+                    const id = wrapper.getAttribute('data-id');
+                    const can_add_dependency = this.can_add_dependency(
+                        connecting_bar.task,
+                        this.get_task(id)
+                    );
+                    wrapper.querySelectorAll('.circle').forEach(circle => {
+                        let show_circle =
+                            can_add_dependency ||
+                            circle.classList.contains('selected');
+                        if (connecting_bar.task.id !== id) {
+                            show_circle &= !circle.classList.contains('right');
+                        }
+                        circle.classList.add(
+                            show_circle ? 'active' : 'disabled'
+                        );
+                    });
+                });
+            } else {
+                const { task } = bar;
+                const { task: connecting_task } = connecting_bar;
+                this.$svg
+                    .querySelectorAll('.handle-group .circle')
+                    .forEach(circle => {
+                        circle.classList.remove(
+                            'disabled',
+                            'active',
+                            'selected'
+                        );
+                    });
+
+                if (this.can_add_dependency(connecting_task, task)) {
+                    this.add_dependency(connecting_task, task, connecting_type);
+                }
+                connecting_bar = null;
+            }
+        });
+
         $.on(this.$svg, 'mousedown', '.bar-wrapper, .handle', (e, element) => {
+            if (is_connecting) return;
             const bar_wrapper = $.closest('.bar-wrapper', element);
 
             if (element.classList.contains('left')) {
@@ -727,7 +797,12 @@ export default class Gantt {
         });
 
         document.addEventListener('mouseup', e => {
-            if (is_dragging || is_resizing_left || is_resizing_right) {
+            if (
+                is_dragging ||
+                is_resizing_left ||
+                is_resizing_right ||
+                is_connecting
+            ) {
                 bars.forEach(bar => bar.group.classList.remove('active'));
             }
 
@@ -736,34 +811,15 @@ export default class Gantt {
             is_resizing_right = false;
         });
 
-       $.on(this.$container, 'scroll', e => {
-
-            let elements = document.querySelectorAll('.bar-wrapper');
-            let localBars = [];
-            const ids = [];
-            let dx;
-            
-            this.layers.date.setAttribute('transform', 'translate(0,'+ e.currentTarget.scrollTop +')');
-
-            if (x_on_scroll_start) {
-                dx = e.currentTarget.scrollLeft - x_on_scroll_start;
-            }
-
-            Array.prototype.forEach.call(elements, function(el, i){
-                ids.push(el.getAttribute('data-id'));
+        $.on(this.$container, 'scroll', e => {
+            const { scrollTop } = e.currentTarget;
+            requestAnimationFrame(() => {
+                this.layers.date.setAttribute(
+                    'transform',
+                    `translate(0,${scrollTop})`
+                );
             });
-
-            if (dx) {
-                localBars = ids.map(id => this.get_bar(id));
-            
-                localBars.forEach(bar => {
-                    bar.update_label_position_on_horizontal_scroll({ x: dx, sx: e.currentTarget.scrollLeft });
-                });
-            }
-            
-            x_on_scroll_start = e.currentTarget.scrollLeft;
-
-       });
+        });
 
         $.on(this.$svg, 'mouseup', e => {
             this.bar_being_dragged = null;
@@ -951,6 +1007,31 @@ export default class Gantt {
      */
     clear() {
         this.$svg.innerHTML = '';
+    }
+
+    can_add_dependency(from_task, to_task) {
+        const not_same_task = from_task.id !== to_task.id;
+        const no_duplicate = !to_task.dependencies.has(from_task.id);
+        const no_loop = !this.get_all_dependent_tasks(to_task.id).includes(
+            from_task.id
+        );
+        return not_same_task && no_duplicate && no_loop;
+    }
+
+    add_dependency(task_from, task_to, type) {
+        this.make_arrow(task_from, task_to, type);
+        this.map_arrows_on_bar(this.get_bar(task_from.id));
+        this.map_arrows_on_bar(this.get_bar(task_to.id));
+        task_to.dependencies.set(task_from.id, type);
+        this.setup_dependencies();
+        this.trigger_event('dependency_change', [task_from, task_to, type]);
+    }
+
+    delete_dependency(task_from, task_to, type) {
+        task_to.task.dependencies.delete(task_from.task.id);
+        this.map_arrows_on_bars();
+        this.setup_dependencies();
+        this.trigger_event('dependency_change', [task_from, task_to, type]);
     }
 }
 

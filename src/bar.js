@@ -73,7 +73,7 @@ export default class Bar {
         if (this.gantt.options.progress) {
             this.draw_progress_bar();
         }
-    
+
         this.draw_label();
 
         if (this.task.thumbnail) {
@@ -125,7 +125,7 @@ export default class Bar {
         let padding = 5;
 
         if (this.task.img) {
-            x_coord = this.x + this.image_size + padding; 
+            x_coord = this.x + this.image_size + padding;
         } else {
             x_coord = this.x + 5;
         }
@@ -142,7 +142,8 @@ export default class Bar {
     }
 
     draw_thumbnail() {
-        let x_offset = 10, y_offset = 2;
+        let x_offset = 10,
+            y_offset = 2;
         let defs, clipPath;
 
         defs = createSVG('defs', {
@@ -182,7 +183,6 @@ export default class Bar {
         });
     }
 
-
     draw_resize_handles() {
         if (this.invalid) return;
 
@@ -211,6 +211,22 @@ export default class Bar {
             append_to: this.handle_group
         });
 
+        createSVG('circle', {
+            cx: bar.getX() - 10,
+            cy: bar.getY() + this.height / 2,
+            r: this.height / 6,
+            class: 'circle left',
+            append_to: this.handle_group
+        });
+
+        createSVG('circle', {
+            cx: bar.getX() + bar.getWidth() + 10,
+            cy: bar.getY() + this.height / 2,
+            r: this.height / 6,
+            class: 'circle right',
+            append_to: this.handle_group
+        });
+
         if (this.task.progress && this.task.progress < 100) {
             this.$handle_progress = createSVG('polygon', {
                 points: this.get_progress_polygon_points().join(','),
@@ -222,14 +238,17 @@ export default class Bar {
 
     get_progress_polygon_points() {
         const bar_progress = this.$bar_progress;
-        return bar_progress && [
-            bar_progress.getEndX() - 5,
-            bar_progress.getY() + bar_progress.getHeight(),
-            bar_progress.getEndX() + 5,
-            bar_progress.getY() + bar_progress.getHeight(),
-            bar_progress.getEndX(),
-            bar_progress.getY() + bar_progress.getHeight() - 8.66
-        ] || [];
+        return (
+            (bar_progress && [
+                bar_progress.getEndX() - 5,
+                bar_progress.getY() + bar_progress.getHeight(),
+                bar_progress.getEndX() + 5,
+                bar_progress.getY() + bar_progress.getHeight(),
+                bar_progress.getEndX(),
+                bar_progress.getY() + bar_progress.getHeight() - 8.66
+            ]) ||
+            []
+        );
     }
 
     bind() {
@@ -238,7 +257,7 @@ export default class Bar {
     }
 
     setup_click_event() {
-        $.on(this.group, 'focus ' + this.gantt.options.popup_trigger, e => {
+        $.on(this.bar_group, 'focus ' + this.gantt.options.popup_trigger, e => {
             if (this.action_completed) {
                 // just finished a move action, wait for a few seconds
                 return;
@@ -277,7 +296,7 @@ export default class Bar {
         const bar = this.$bar;
         if (x) {
             // get all x values of parent task
-            const xs = this.task.dependencies.map(dep => {
+            const xs = Array.from(this.task.dependencies, ([dep]) => {
                 return this.gantt.get_bar(dep).$bar.getX();
             });
             // child task must not go before parent
@@ -297,14 +316,13 @@ export default class Bar {
 
         if (this.gantt.options.resizing) {
             this.update_handle_position();
-        } 
+        }
 
         this.update_progressbar_position();
         this.update_arrow_position();
     }
 
     update_label_position_on_horizontal_scroll({ x, sx }) {
-        
         const container = document.querySelector('.gantt-container');
         const label = this.group.querySelector('.bar-label');
         const img = this.group.querySelector('.bar-img') || '';
@@ -312,28 +330,30 @@ export default class Bar {
 
         let barWidthLimit = this.$bar.getX() + this.$bar.getWidth();
         let newLabelX = label.getX() + x;
-        let newImgX = img && img.getX() + x || 0;
-        let imgWidth = img && img.getBBox().width + 7 || 7;
+        let newImgX = (img && img.getX() + x) || 0;
+        let imgWidth = (img && img.getBBox().width + 7) || 7;
         let labelEndX = newLabelX + label.getBBox().width + 7;
         let viewportCentral = sx + container.clientWidth / 2;
 
         if (label.classList.contains('big')) return;
-        
+
         if (labelEndX < barWidthLimit && x > 0 && labelEndX < viewportCentral) {
-            label.setAttribute('x', newLabelX );
-            if (img) { 
-                img.setAttribute('x', newImgX);
-                img_mask.setAttribute('x', newImgX);
-            }
-        } else if ( (newLabelX - imgWidth)  > this.$bar.getX() && x < 0 && labelEndX > viewportCentral ){
-            label.setAttribute('x', newLabelX );
+            label.setAttribute('x', newLabelX);
             if (img) {
                 img.setAttribute('x', newImgX);
                 img_mask.setAttribute('x', newImgX);
             }
-            
+        } else if (
+            newLabelX - imgWidth > this.$bar.getX() &&
+            x < 0 &&
+            labelEndX > viewportCentral
+        ) {
+            label.setAttribute('x', newLabelX);
+            if (img) {
+                img.setAttribute('x', newImgX);
+                img_mask.setAttribute('x', newImgX);
+            }
         }
-        
     }
 
     date_changed() {
@@ -459,11 +479,13 @@ export default class Bar {
     }
 
     update_progressbar_position() {
-        this.$bar_progress && this.$bar_progress.setAttribute('x', this.$bar.getX());
-        this.$bar_progress && this.$bar_progress.setAttribute(
-            'width',
-            this.$bar.getWidth() * (this.task.progress / 100)
-        );
+        this.$bar_progress &&
+            this.$bar_progress.setAttribute('x', this.$bar.getX());
+        this.$bar_progress &&
+            this.$bar_progress.setAttribute(
+                'width',
+                this.$bar.getWidth() * (this.task.progress / 100)
+            );
     }
 
     update_label_position() {
@@ -471,25 +493,31 @@ export default class Bar {
         const bar = this.$bar,
             label = this.group.querySelector('.bar-label'),
             img = this.group.querySelector('.bar-img');
-        
+
         let padding = 5;
         let x_offset_label_img = this.image_size + 10;
 
         if (label.getBBox().width > bar.getWidth()) {
             label.classList.add('big');
             if (img) {
-                img.setAttribute('x', bar.getX() + bar.getWidth() + padding );
-                img_mask.setAttribute('x', bar.getX() + bar.getWidth() + padding );
-                label.setAttribute('x', bar.getX() + bar.getWidth() + x_offset_label_img);
+                img.setAttribute('x', bar.getX() + bar.getWidth() + padding);
+                img_mask.setAttribute(
+                    'x',
+                    bar.getX() + bar.getWidth() + padding
+                );
+                label.setAttribute(
+                    'x',
+                    bar.getX() + bar.getWidth() + x_offset_label_img
+                );
             } else {
                 label.setAttribute('x', bar.getX() + bar.getWidth() + padding);
             }
         } else {
             label.classList.remove('big');
-            
+
             if (img) {
-                img.setAttribute('x', bar.getX()  + padding);
-                img_mask.setAttribute('x', bar.getX()  + padding);
+                img.setAttribute('x', bar.getX() + padding);
+                img_mask.setAttribute('x', bar.getX() + padding);
                 label.setAttribute('x', bar.getX() + x_offset_label_img);
             } else {
                 label.setAttribute('x', bar.getX() + padding);
@@ -505,6 +533,14 @@ export default class Bar {
         this.handle_group
             .querySelector('.handle.right')
             .setAttribute('x', bar.getEndX() - 9);
+
+        this.handle_group
+            .querySelector('.circle.left')
+            .setAttribute('cx', String(bar.getX() - 10));
+        this.handle_group
+            .querySelector('.circle.right')
+            .setAttribute('cx', String(bar.getEndX() + 10));
+
         const handle = this.group.querySelector('.handle.progress');
         handle &&
             handle.setAttribute('points', this.get_progress_polygon_points());

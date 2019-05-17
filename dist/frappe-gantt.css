@@ -19,16 +19,26 @@
   stroke: #e0e0e0;
   stroke-width: 0.2; }
   .gantt .tick.thick {
-    stroke-width: 0.4; }
+    stroke-width: 0.4;
+    stroke: #adadad; }
 
 .gantt .today-highlight {
   fill: #fcf8e3;
   opacity: 0.5; }
 
-.gantt .arrow {
+.gantt .arrows {
   fill: none;
   stroke: #666;
   stroke-width: 1.4; }
+  .gantt .arrows .hover-area {
+    stroke-width: 10;
+    stroke-opacity: 0;
+    cursor: pointer; }
+    .gantt .arrows .hover-area:hover ~ .arrow {
+      stroke-width: 2;
+      stroke: black; }
+  .gantt .arrows .arrow {
+    pointer-events: none; }
 
 .gantt .bar {
   fill: #b8c2cc;
@@ -64,6 +74,24 @@
   visibility: hidden;
   transition: opacity .3s ease; }
 
+.gantt .circle {
+  fill: #b8c2cc;
+  cursor: pointer;
+  stroke: #8D99A6;
+  stroke-width: 0.5;
+  opacity: 0;
+  transition: opacity .3s ease; }
+  .gantt .circle:hover {
+    fill: #fff; }
+  .gantt .circle.active {
+    fill: #6A8EAE;
+    opacity: 1; }
+  .gantt .circle.disabled {
+    pointer-events: none;
+    visibility: hidden; }
+  .gantt .circle.selected {
+    fill: #D1FAFF; }
+
 .gantt .bar-wrapper {
   cursor: pointer;
   outline: none; }
@@ -74,10 +102,15 @@
   .gantt .bar-wrapper:hover .handle {
     visibility: visible;
     opacity: 1; }
+  .gantt .bar-wrapper:hover .circle {
+    opacity: 1; }
   .gantt .bar-wrapper.active .bar {
     fill: #a9b5c1; }
   .gantt .bar-wrapper.active .bar-progress-gantt {
     fill: #8a8aff; }
+
+.gantt .bar-group:focus {
+  outline: #c7c7c7 solid 1px; }
 
 .gantt .lower-text, .gantt .upper-text {
   font-size: 12px;
@@ -96,7 +129,7 @@
   position: relative;
   overflow: auto;
   font-size: 12px;
-  height: 300px; }
+  height: 100%; }
   .gantt-container .popup-wrapper {
     position: absolute;
     top: 0;

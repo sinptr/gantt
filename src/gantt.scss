@@ -9,6 +9,10 @@ $text-light: #555 !default;
 $text-color: #333 !default;
 $blue: #a3a3ff !default;
 $handle-color: #ddd !default;
+$arrow-color: #666;
+$circle-hover: #fff;
+$circle-active: #6A8EAE;
+$circle-selected: #D1FAFF;
 
 .gantt {
 	.grid-background {
@@ -33,6 +37,7 @@ $handle-color: #ddd !default;
 		stroke-width: 0.2;
 		&.thick {
 			stroke-width: 0.4;
+			stroke: darken($border-color, 20);
 		}
 	}
 	.today-highlight {
@@ -40,10 +45,24 @@ $handle-color: #ddd !default;
 		opacity: 0.5;
 	}
 
-	.arrow {
+	.arrows {
 		fill: none;
-		stroke: $text-muted;
+		stroke: $arrow-color;
 		stroke-width: 1.4;
+
+		.hover-area {
+			stroke-width: 10;
+			stroke-opacity: 0;
+			cursor: pointer;
+			&:hover ~ .arrow{
+                stroke-width: 2;
+				stroke: darken($arrow-color, 100);
+			}
+		}
+
+		.arrow {
+			pointer-events: none;
+		}
 	}
 
 	.bar {
@@ -87,6 +106,33 @@ $handle-color: #ddd !default;
 		transition: opacity .3s ease;
 	}
 
+	.circle {
+		fill: $bar-color;
+		cursor: pointer;
+		stroke: $bar-stroke;
+		stroke-width: 0.5;
+		opacity: 0;
+		transition: opacity .3s ease;
+
+		&:hover {
+			fill: $circle-hover;
+		}
+
+		&.active {
+			fill: $circle-active;
+			opacity: 1;
+		}
+
+		&.disabled {
+			pointer-events: none;
+			visibility: hidden;
+		}
+
+		&.selected {
+			fill: $circle-selected;
+		}
+	}
+
 	.bar-wrapper {
 		cursor: pointer;
 		outline: none;
@@ -104,6 +150,10 @@ $handle-color: #ddd !default;
 				visibility: visible;
 				opacity: 1;
 			}
+
+			.circle {
+				opacity: 1;
+			}
 		}
 
 		&.active {
@@ -114,6 +164,12 @@ $handle-color: #ddd !default;
 			.bar-progress-gantt {
 				fill: darken($blue, 5);
 			}
+		}
+	}
+
+	.bar-group {
+		&:focus {
+			outline: darken($border-color, 10) solid 1px;
 		}
 	}
 
@@ -137,7 +193,7 @@ $handle-color: #ddd !default;
 	position: relative;
 	overflow: auto;
 	font-size: 12px;
-	height: 300px;
+	height: 100%;
 
 	.popup-wrapper {
 		position: absolute;

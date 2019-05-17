@@ -7,18 +7,25 @@
 		body {
 			font-family: sans-serif;
 			background: #ccc;
+            height: 100vh;
 		}
 		.container {
 			width: 80%;
 			margin: 0 auto;
+            height: 100%;
 		}
 		/* custom class */
 		.gantt .bar-milestone .bar {
 			fill: tomato;
 		}
+
+		.gantt-target {
+			height: 400px;
+		}
 	</style>
 	<link rel="stylesheet" href="dist/frappe-gantt.css" />
 	<script src="dist/frappe-gantt.js"></script>
+	<script src="dist/enums.js"></script>
 </head>
 <body>
 	<div class="container">
@@ -41,7 +48,7 @@
 				name: 'Write new content',
 				id: "Task_1",
 				progress: 5,
-				dependencies: 'Task_0'
+				// dependencies: 'Task_0'
 			},
 			{
 				start: '2018-10-04',
@@ -49,7 +56,7 @@
 				name: 'Apply new styles',
 				id: "Task_2",
 				progress: 10,
-				dependencies: 'Task_1',
+				// dependencies: 'Task_1',
 				thumbnail: 'https://mdn.mozillademos.org/files/6457/mdn_logo_only_color.png'
 			},
 			{
@@ -58,7 +65,7 @@
 				name: 'Review',
 				id: "Task 3",
 				progress: 5,
-				dependencies: 'Task_2'
+				// dependencies: 'Task_2'
 			},
 			{
 				start: '2018-10-08',
@@ -66,17 +73,17 @@
 				name: 'Deploy',
 				id: "Task_4",
 				progress: 0,
-				dependencies: 'Task_2'
+				// dependencies: [{task_id: 'Task_2', type: ''}]
 			},
 			{
-				start: '2018-10-11',
+				start: '2018-10-07',
 				end: '2018-10-11',
 				name: 'Go Live!',
 				id: "Task_5",
 				progress: 0,
-				dependencies: 'Task_4',
-				custom_class: 'bar-milestone',
-				thumbnail: 'https://mdn.mozillademos.org/files/6457/mdn_logo_only_color.png'
+				dependencies: [['Task_4', Enums.dependency.types.END_TO_START]],
+				// custom_class: 'bar-milestone',
+				// thumbnail: 'https://mdn.mozillademos.org/files/6457/mdn_logo_only_color.png'
 			},
 			{
 				start: '2018-10-11',
@@ -84,9 +91,8 @@
 				name: 'Header Stick!',
 				id: "Task_6",
 				progress: 0,
-				dependencies: '',
-				custom_class: 'bar-milestone',
-				thumbnail: 'https://mdn.mozillademos.org/files/6457/mdn_logo_only_color.png'
+				// custom_class: 'bar-milestone',
+				// thumbnail: 'https://mdn.mozillademos.org/files/6457/mdn_logo_only_color.png'
 			},
 			{
 				start: '2018-10-11',
@@ -94,23 +100,16 @@
 				name: 'Jean Jacques doc!',
 				id: "Task_7",
 				progress: 0,
-				dependencies: 'Task_0',
-				custom_class: 'bar-milestone',
-				thumbnail: 'https://mdn.mozillademos.org/files/6457/mdn_logo_only_color.png'
+				dependencies: [['Task_0', Enums.dependency.types.START_TO_START]],
+				// custom_class: 'bar-milestone',
+				// thumbnail: 'https://mdn.mozillademos.org/files/6457/mdn_logo_only_color.png'
 			},
-			{
-				start: '2014-01-05',
-				end: '2019-10-12',
-				name: 'Long term task',
-				id: "Task 6",
-				progress: 0
-			}
-		]
+		];
 		var gantt_chart = new Gantt(".gantt-target", tasks, {
 			bar_height: 30,
-			is_draggable: false,
-			progress: true,
-			resizing: false,
+			is_draggable: true,
+			progress: false,
+			resizing: true,
 			on_click: function (task) {
 				console.log(task);
 			},
@@ -123,10 +122,9 @@
 			on_view_change: function(mode) {
 				console.log(mode);
 			},
-			view_mode: 'Month',
-			language: 'en'
+			view_mode: 'Day',
+			language: 'ru'
 		});
-		console.log(gantt_chart);
 	</script>
 </body>
 </html>
