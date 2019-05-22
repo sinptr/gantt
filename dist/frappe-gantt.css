@@ -26,6 +26,9 @@
   fill: #fcf8e3;
   opacity: 0.5; }
 
+.gantt .weekend {
+  opacity: 0.5; }
+
 .gantt .arrows {
   fill: none;
   stroke: #666;

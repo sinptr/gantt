@@ -11,6 +11,7 @@ export default class Gantt {
     constructor(wrapper, tasks, options) {
         this.setup_wrapper(wrapper);
         this.setup_options(options);
+        this.setup_calendar();
         this.setup_tasks(tasks);
         // initialize with default view mode
         this.change_view_mode();
@@ -88,7 +89,8 @@ export default class Gantt {
             date_format: 'YYYY-MM-DD',
             popup_trigger: 'click',
             custom_popup_html: null,
-            language: 'en'
+            language: 'en',
+            calendar: []
         };
         this.options = Object.assign({}, default_options, options);
     }
@@ -204,6 +206,15 @@ export default class Gantt {
     setup_dates() {
         this.setup_gantt_dates();
         this.setup_date_values();
+    }
+
+    setup_calendar() {
+        try {
+            this.calendar = new Map(this.options.calendar);
+        } catch (e) {
+            this.calendar = new Map();
+            console.error(new Error(`Wrong calendar format: ${e.message}`));
+        }
     }
 
     setup_gantt_dates() {
@@ -442,7 +453,9 @@ export default class Gantt {
                 x: date.lower_x,
                 y: date.lower_y,
                 innerHTML: date.lower_text,
-                class: 'lower-text',
+                class: ['lower-text', date.is_weekend ? 'weekend' : ''].join(
+                    ' '
+                ),
                 append_to: this.layers.date
             });
 
@@ -478,6 +491,11 @@ export default class Gantt {
         if (!last_date) {
             last_date = date_utils.add(date, 1, 'year');
         }
+
+        const is_weekend = this.calendar.has(
+            date_utils.format(date, 'YYYY-MM-DD')
+        );
+
         const date_text = {
             'Quarter Day_lower': date_utils.format(
                 date,
@@ -554,7 +572,8 @@ export default class Gantt {
             upper_x: base_pos.x + x_pos[`${this.options.view_mode}_upper`],
             upper_y: base_pos.upper_y,
             lower_x: base_pos.x + x_pos[`${this.options.view_mode}_lower`],
-            lower_y: base_pos.lower_y
+            lower_y: base_pos.lower_y,
+            is_weekend
         };
     }
 

@@ -1300,6 +1300,7 @@ var Gantt = function () {
 
         this.setup_wrapper(wrapper);
         this.setup_options(options);
+        this.setup_calendar();
         this.setup_tasks(tasks);
         // initialize with default view mode
         this.change_view_mode();
@@ -1371,7 +1372,8 @@ var Gantt = function () {
                 date_format: 'YYYY-MM-DD',
                 popup_trigger: 'click',
                 custom_popup_html: null,
-                language: 'en'
+                language: 'en',
+                calendar: []
             };
             this.options = Object.assign({}, default_options, options);
         }
@@ -1538,6 +1540,16 @@ var Gantt = function () {
         value: function setup_dates() {
             this.setup_gantt_dates();
             this.setup_date_values();
+        }
+    }, {
+        key: 'setup_calendar',
+        value: function setup_calendar() {
+            try {
+                this.calendar = new Map(this.options.calendar);
+            } catch (e) {
+                this.calendar = new Map();
+                console.error(new Error('Wrong calendar format: ' + e.message));
+            }
         }
     }, {
         key: 'setup_gantt_dates',
@@ -1835,7 +1847,7 @@ var Gantt = function () {
                         x: date.lower_x,
                         y: date.lower_y,
                         innerHTML: date.lower_text,
-                        class: 'lower-text',
+                        class: ['lower-text', date.is_weekend ? 'weekend' : ''].join(' '),
                         append_to: this.layers.date
                     });
 
@@ -1887,6 +1899,9 @@ var Gantt = function () {
             if (!last_date) {
                 last_date = date_utils.add(date, 1, 'year');
             }
+
+            var is_weekend = this.calendar.has(date_utils.format(date, 'YYYY-MM-DD'));
+
             var date_text = {
                 'Quarter Day_lower': date_utils.format(date, 'HH', this.options.language),
                 'Half Day_lower': date_utils.format(date, 'HH', this.options.language),
@@ -1929,7 +1944,8 @@ var Gantt = function () {
                 upper_x: base_pos.x + x_pos[this.options.view_mode + '_upper'],
                 upper_y: base_pos.upper_y,
                 lower_x: base_pos.x + x_pos[this.options.view_mode + '_lower'],
-                lower_y: base_pos.lower_y
+                lower_y: base_pos.lower_y,
+                is_weekend: is_weekend
             };
         }
     }, {
