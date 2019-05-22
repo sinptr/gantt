@@ -27,25 +27,23 @@ export default class Arrow {
         const padding = 10;
         switch (this.type) {
             case types.START_TO_START:
-                start_x = this.from_task.$bar.getX();
+                start_x = this.from_task.x;
                 start_padding = -padding;
                 typeSign = -1;
                 break;
             case types.END_TO_START:
-                start_x = this.from_task.$bar.getEndX();
+                start_x = this.from_task.x + this.from_task.$bar.getWidth();
                 start_padding = padding;
                 typeSign = 1;
                 break;
             default:
-                start_x = this.from_task.$bar.getX();
+                start_x = this.from_task.x;
                 start_padding = -padding;
                 typeSign = -1;
         }
-        const start_y =
-            this.from_task.$bar.getY() + this.from_task.$bar.getHeight() / 2;
-        const end_x = this.to_task.$bar.getX();
-        const end_y =
-            this.to_task.$bar.getY() + this.to_task.$bar.getHeight() / 2;
+        const start_y = this.from_task.y + this.from_task.$bar.getHeight() / 2;
+        const end_x = this.to_task.x;
+        const end_y = this.to_task.y + this.to_task.$bar.getHeight() / 2;
 
         const arrowPath = `
                 m -5 -5

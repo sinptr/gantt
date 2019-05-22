@@ -588,8 +588,8 @@ export default class Gantt {
     make_arrow(from_task, to_task, type) {
         const arrow = new Arrow(
             this,
-            this.bars[from_task._index], // from_task
-            this.bars[to_task._index], // to_task
+            this.get_bar(from_task.id),
+            this.get_bar(to_task.id),
             type
         );
         this.layers.arrows.appendChild(arrow.element);
@@ -668,6 +668,7 @@ export default class Gantt {
         let parent_bar_id = null;
         let bars = []; // instanceof Bar
         let connecting_bar = null;
+        let new_position = null;
         this.bar_being_dragged = null;
 
         function action_in_progress() {
@@ -757,8 +758,8 @@ export default class Gantt {
 
             bars.forEach(bar => {
                 const $bar = bar.$bar;
-                $bar.ox = $bar.getX();
-                $bar.oy = $bar.getY();
+                $bar.ox = bar.x;
+                $bar.oy = bar.y;
                 $bar.owidth = $bar.getWidth();
                 $bar.finaldx = 0;
             });
@@ -768,6 +769,34 @@ export default class Gantt {
             if (!action_in_progress()) return;
             const dx = e.offsetX - x_on_start;
             const dy = e.offsetY - y_on_start;
+
+            if (this.options.is_draggable && is_dragging) {
+                const row = Math.floor(
+                    (e.offsetY - this.options.header_height - 10) /
+                        (this.options.bar_height + this.options.padding)
+                );
+                if (row >= 0 && row < this.tasks.length) {
+                    const bar = this.get_bar(parent_bar_id);
+                    const offset = row - bar.task._index;
+
+                    if (offset) {
+                        new_position = bar.task._index + offset;
+                        this.tasks.splice(
+                            new_position,
+                            0,
+                            this.tasks.splice(bar.task._index, 1)[0]
+                        );
+
+                        this.tasks.forEach((task, i) => {
+                            if (task._index !== i) {
+                                task._index = i;
+                                const bar = this.get_bar(task.id);
+                                bar.update_bar_position({ y: bar.compute_y() });
+                            }
+                        });
+                    }
+                }
+            }
 
             bars.forEach(bar => {
                 const $bar = bar.$bar;
@@ -791,7 +820,9 @@ export default class Gantt {
                         });
                     }
                 } else if (is_dragging && this.options.is_draggable) {
-                    bar.update_bar_position({ x: $bar.ox + $bar.finaldx });
+                    bar.update_bar_position({
+                        x: $bar.ox + $bar.finaldx
+                    });
                 }
             });
         });
@@ -823,6 +854,13 @@ export default class Gantt {
 
         $.on(this.$svg, 'mouseup', e => {
             this.bar_being_dragged = null;
+            if (new_position !== null) {
+                this.trigger_event('order_change', [
+                    parent_bar_id,
+                    new_position
+                ]);
+                new_position = null;
+            }
             bars.forEach(bar => {
                 const $bar = bar.$bar;
                 if (!$bar.finaldx) return;

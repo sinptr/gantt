@@ -37,7 +37,8 @@ export default class Bar {
                 (this.task.progress / 100) || 0;
         this.group = createSVG('g', {
             class: 'bar-wrapper ' + (this.task.custom_class || ''),
-            'data-id': this.task.id
+            'data-id': this.task.id,
+            transform: `translate(${this.x}, ${this.y})`
         });
         this.bar_group = createSVG('g', {
             class: 'bar-group',
@@ -87,8 +88,8 @@ export default class Bar {
 
     draw_bar() {
         this.$bar = createSVG('rect', {
-            x: this.x,
-            y: this.y,
+            x: 0, //this.x,
+            y: 0, //this.y,
             width: this.width,
             height: this.height,
             rx: this.corner_radius,
@@ -107,8 +108,8 @@ export default class Bar {
     draw_progress_bar() {
         if (this.invalid) return;
         this.$bar_progress = createSVG('rect', {
-            x: this.x,
-            y: this.y,
+            x: 0, //this.x,
+            y: 0, //this.y,
             width: this.progress_width,
             height: this.height,
             rx: this.corner_radius,
@@ -125,14 +126,14 @@ export default class Bar {
         let padding = 5;
 
         if (this.task.img) {
-            x_coord = this.x + this.image_size + padding;
+            x_coord = this.image_size + padding;
         } else {
-            x_coord = this.x + 5;
+            x_coord = padding;
         }
 
         createSVG('text', {
             x: x_coord,
-            y: this.y + this.height / 2,
+            y: this.height / 2,
             innerHTML: this.task.name,
             class: 'bar-label',
             append_to: this.bar_group
@@ -152,8 +153,8 @@ export default class Bar {
 
         createSVG('rect', {
             id: 'rect_' + this.task.id,
-            x: this.x + x_offset,
-            y: this.y + y_offset,
+            x: x_offset,
+            y: y_offset,
             width: this.image_size,
             height: this.image_size,
             rx: '15',
@@ -172,8 +173,8 @@ export default class Bar {
         });
 
         createSVG('image', {
-            x: this.x + x_offset,
-            y: this.y + y_offset,
+            x: x_offset,
+            y: y_offset,
             width: this.image_size,
             height: this.image_size,
             class: 'bar-img',
@@ -292,12 +293,12 @@ export default class Bar {
         });
     }
 
-    update_bar_position({ x = null, width = null }) {
+    update_bar_position({ x = null, y = null, width = null }) {
         const bar = this.$bar;
         if (x) {
             // get all x values of parent task
             const xs = Array.from(this.task.dependencies, ([dep]) => {
-                return this.gantt.get_bar(dep).$bar.getX();
+                return this.gantt.get_bar(dep).x;
             });
             // child task must not go before parent
             const valid_x = xs.reduce((prev, curr) => {
@@ -307,8 +308,12 @@ export default class Bar {
                 width = null;
                 return;
             }
-            this.update_attr(bar, 'x', x);
+            this.x = x;
         }
+        if (y) {
+            this.y = y;
+        }
+        this.group.setAttribute('transform', `translate(${this.x}, ${this.y})`);
         if (width && width >= this.gantt.options.column_width) {
             this.update_attr(bar, 'width', width);
         }
@@ -392,7 +397,7 @@ export default class Bar {
 
     compute_start_end_date() {
         const bar = this.$bar;
-        const x_in_units = bar.getX() / this.gantt.options.column_width;
+        const x_in_units = this.x / this.gantt.options.column_width;
         const new_start_date = date_utils.add(
             this.gantt.gantt_start,
             x_in_units * this.gantt.options.step,
@@ -479,8 +484,6 @@ export default class Bar {
     }
 
     update_progressbar_position() {
-        this.$bar_progress &&
-            this.$bar_progress.setAttribute('x', this.$bar.getX());
         this.$bar_progress &&
             this.$bar_progress.setAttribute(
                 'width',
