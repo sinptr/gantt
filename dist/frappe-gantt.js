@@ -1221,11 +1221,12 @@ var Arrow = function () {
 }();
 
 var Popup = function () {
-    function Popup(parent, custom_html) {
+    function Popup(parent, custom_html, chart) {
         classCallCheck(this, Popup);
 
         this.parent = parent;
         this.custom_html = custom_html;
+        this.chart = chart;
         this.make();
     }
 
@@ -1264,16 +1265,18 @@ var Popup = function () {
             }
 
             // set position
-            var position_meta = void 0;
-            if (target_element instanceof HTMLElement) {
-                position_meta = target_element.getBoundingClientRect();
-            } else if (target_element instanceof SVGElement) {
-                position_meta = options.target_element.getBBox();
-            }
+            var chart_position = this.chart.getBoundingClientRect();
+            var target_position = target_element.getBoundingClientRect();
+            var relative_position = {
+                top: target_position.top - chart_position.top,
+                right: target_position.right - chart_position.right,
+                bottom: target_position.bottom - chart_position.bottom,
+                left: target_position.left - chart_position.left
+            };
 
             if (options.position === 'left') {
-                this.parent.style.left = position_meta.x + (position_meta.width + 10) + 'px';
-                this.parent.style.top = position_meta.y + 'px';
+                this.parent.style.left = relative_position.left + (target_position.width + 10) + 'px';
+                this.parent.style.top = relative_position.top + 'px';
 
                 this.pointer.style.transform = 'rotateZ(90deg)';
                 this.pointer.style.left = '-7px';
@@ -2411,7 +2414,7 @@ var Gantt = function () {
         key: 'show_popup',
         value: function show_popup(options) {
             if (!this.popup) {
-                this.popup = new Popup(this.popup_wrapper, this.options.custom_popup_html);
+                this.popup = new Popup(this.popup_wrapper, this.options.custom_popup_html, this.$svg);
             }
             this.popup.show(options);
         }

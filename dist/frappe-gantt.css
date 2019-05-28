@@ -38,8 +38,7 @@
     stroke-opacity: 0;
     cursor: pointer; }
     .gantt .arrows .hover-area:hover ~ .arrow {
-      stroke-width: 2;
-      stroke: black; }
+      stroke: #333333; }
   .gantt .arrows .arrow {
     pointer-events: none; }
 
@@ -99,7 +98,8 @@
   cursor: pointer;
   outline: none; }
   .gantt .bar-wrapper:hover .bar {
-    fill: #a9b5c1; }
+    fill: #a9b5c1;
+    stroke-width: 2; }
   .gantt .bar-wrapper:hover .bar-progress-gantt {
     fill: #8a8aff; }
   .gantt .bar-wrapper:hover .handle {
@@ -108,12 +108,13 @@
   .gantt .bar-wrapper:hover .circle {
     opacity: 1; }
   .gantt .bar-wrapper.active .bar {
-    fill: #a9b5c1; }
+    fill: #a9b5c1;
+    stroke-width: 2; }
   .gantt .bar-wrapper.active .bar-progress-gantt {
     fill: #8a8aff; }
 
 .gantt .bar-group:focus {
-  outline: #c7c7c7 solid 1px; }
+  outline: none; }
 
 .gantt .lower-text, .gantt .upper-text {
   font-size: 12px;

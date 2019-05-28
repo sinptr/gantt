@@ -129,6 +129,9 @@
             on_order_change: function(id, index) {
 			    console.log(id, index);
             },
+			on_dependency_change: function(task_from, task_to, dependency_type) {
+				console.log(task_from, task_to, dependency_type);
+			},
 			view_mode: 'Day',
 			language: 'ru'
 		});

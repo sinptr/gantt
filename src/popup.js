@@ -1,7 +1,8 @@
 export default class Popup {
-    constructor(parent, custom_html) {
+    constructor(parent, custom_html, chart) {
         this.parent = parent;
         this.custom_html = custom_html;
+        this.chart = chart;
         this.make();
     }
 
@@ -41,17 +42,19 @@ export default class Popup {
         }
 
         // set position
-        let position_meta;
-        if (target_element instanceof HTMLElement) {
-            position_meta = target_element.getBoundingClientRect();
-        } else if (target_element instanceof SVGElement) {
-            position_meta = options.target_element.getBBox();
-        }
+        const chart_position = this.chart.getBoundingClientRect();
+        const target_position = target_element.getBoundingClientRect();
+        const relative_position = {
+            top: target_position.top - chart_position.top,
+            right: target_position.right - chart_position.right,
+            bottom: target_position.bottom - chart_position.bottom,
+            left: target_position.left - chart_position.left
+        };
 
         if (options.position === 'left') {
             this.parent.style.left =
-                position_meta.x + (position_meta.width + 10) + 'px';
-            this.parent.style.top = position_meta.y + 'px';
+                relative_position.left + (target_position.width + 10) + 'px';
+            this.parent.style.top = relative_position.top + 'px';
 
             this.pointer.style.transform = 'rotateZ(90deg)';
             this.pointer.style.left = '-7px';

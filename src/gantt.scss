@@ -58,8 +58,7 @@ $circle-selected: #D1FAFF;
 			stroke-opacity: 0;
 			cursor: pointer;
 			&:hover ~ .arrow{
-                stroke-width: 2;
-				stroke: darken($arrow-color, 100);
+				stroke: darken($arrow-color, 20);
 			}
 		}
 
@@ -143,6 +142,7 @@ $circle-selected: #D1FAFF;
 		&:hover {
 			.bar {
 				fill: darken($bar-color, 5);
+                stroke-width: 2;
 			}
 
 			.bar-progress-gantt {
@@ -162,6 +162,7 @@ $circle-selected: #D1FAFF;
 		&.active {
 			.bar {
 				fill: darken($bar-color, 5);
+                stroke-width: 2;
 			}
 
 			.bar-progress-gantt {
@@ -172,7 +173,7 @@ $circle-selected: #D1FAFF;
 
 	.bar-group {
 		&:focus {
-			outline: darken($border-color, 10) solid 1px;
+			outline: none;
 		}
 	}
 
