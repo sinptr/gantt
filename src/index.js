@@ -90,7 +90,8 @@ export default class Gantt {
             popup_trigger: 'click',
             custom_popup_html: null,
             language: 'en',
-            calendar: []
+            calendar: [],
+            working_hours: 8
         };
         this.options = Object.assign({}, default_options, options);
     }
@@ -492,9 +493,9 @@ export default class Gantt {
             last_date = date_utils.add(date, 1, 'year');
         }
 
-        const is_weekend = this.calendar.has(
-            date_utils.format(date, 'YYYY-MM-DD')
-        );
+        const is_weekend =
+            this.calendar.has(date_utils.format(date, 'YYYY-MM-DD')) &&
+            this.options.view_mode === 'Day';
 
         const date_text = {
             'Quarter Day_lower': date_utils.format(
