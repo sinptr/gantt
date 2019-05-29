@@ -2454,7 +2454,7 @@ var Gantt = function () {
                 return task._start;
             }).reduce(function (prev_date, cur_date) {
                 return cur_date <= prev_date ? cur_date : prev_date;
-            });
+            }, this.gantt_end);
         }
 
         /**

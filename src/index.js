@@ -1058,7 +1058,8 @@ export default class Gantt {
             .map(task => task._start)
             .reduce(
                 (prev_date, cur_date) =>
-                    cur_date <= prev_date ? cur_date : prev_date
+                    cur_date <= prev_date ? cur_date : prev_date,
+                this.gantt_end
             );
     }
 
