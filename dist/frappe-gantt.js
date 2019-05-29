@@ -1563,7 +1563,7 @@ var Gantt = function () {
     }, {
         key: 'setup_gantt_dates',
         value: function setup_gantt_dates() {
-            this.gantt_start = this.gantt_end = null;
+            this.gantt_start = this.gantt_end = new Date();
 
             var _iteratorNormalCompletion3 = true;
             var _didIteratorError3 = false;

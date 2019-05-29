@@ -220,7 +220,7 @@ export default class Gantt {
     }
 
     setup_gantt_dates() {
-        this.gantt_start = this.gantt_end = null;
+        this.gantt_start = this.gantt_end = new Date();
 
         for (let task of this.tasks) {
             // set global start and end date
