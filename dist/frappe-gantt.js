@@ -1212,7 +1212,7 @@ var Arrow = function () {
     }, {
         key: 'delete',
         value: function _delete() {
-            this.gantt.delete_dependency(this.from_task, this.to_task, this.type);
+            this.gantt.delete_dependency(this.from_task.task, this.to_task.task, this.type);
             this.element.remove();
             this.remove_events();
         }
@@ -2080,7 +2080,9 @@ var Gantt = function () {
 
             var scroll_pos = hours_before_first_task / this.options.step * this.options.column_width - this.options.column_width;
 
-            parent_element.scrollLeft = scroll_pos;
+            setTimeout(function () {
+                return parent_element.scrollTo({ left: scroll_pos });
+            });
         }
     }, {
         key: 'bind_grid_click',
@@ -2480,7 +2482,7 @@ var Gantt = function () {
     }, {
         key: 'delete_dependency',
         value: function delete_dependency(task_from, task_to, type) {
-            task_to.task.dependencies.delete(task_from.task.id);
+            task_to.dependencies.delete(task_from.id);
             this.map_arrows_on_bars();
             this.setup_dependencies();
             this.trigger_event('dependency_change', [task_from, task_to, type]);

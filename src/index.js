@@ -1087,7 +1087,7 @@ export default class Gantt {
     }
 
     delete_dependency(task_from, task_to, type) {
-        task_to.task.dependencies.delete(task_from.task.id);
+        task_to.dependencies.delete(task_from.id);
         this.map_arrows_on_bars();
         this.setup_dependencies();
         this.trigger_event('dependency_change', [task_from, task_to, type]);
