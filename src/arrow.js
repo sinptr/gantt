@@ -192,7 +192,11 @@ export default class Arrow {
     }
 
     delete() {
-        this.gantt.delete_dependency(this.from_task, this.to_task, this.type);
+        this.gantt.delete_dependency(
+            this.from_task.task,
+            this.to_task,
+            this.type
+        );
         this.element.remove();
         this.remove_events();
     }
