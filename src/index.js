@@ -85,6 +85,7 @@ export default class Gantt {
             resizing: true,
             progress: true,
             is_draggable: true,
+            read_only: false,
             view_mode: 'Day',
             date_format: 'YYYY-MM-DD',
             popup_trigger: 'click',
@@ -276,7 +277,9 @@ export default class Gantt {
 
     bind_events() {
         this.bind_grid_click();
-        this.bind_bar_events();
+        if (!this.options.read_only) {
+            this.bind_bar_events();
+        }
     }
 
     render() {

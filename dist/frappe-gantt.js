@@ -1072,8 +1072,10 @@ var Arrow = function () {
 
         this.calculate_path();
         this.draw();
-        this.bind_events();
-        this.setup_events();
+
+        if (!gantt.options.read_only) {
+            this.bind_events();
+        }
     }
 
     createClass(Arrow, [{
@@ -1081,6 +1083,8 @@ var Arrow = function () {
         value: function bind_events() {
             this.handle_dblclick = this.handle_dblclick.bind(this);
             this.handle_mouseover = this.handle_mouseover.bind(this);
+
+            this.setup_events();
         }
     }, {
         key: 'calculate_path',
@@ -1371,6 +1375,7 @@ var Gantt = function () {
                 resizing: true,
                 progress: true,
                 is_draggable: true,
+                read_only: false,
                 view_mode: 'Day',
                 date_format: 'YYYY-MM-DD',
                 popup_trigger: 'click',
@@ -1634,7 +1639,9 @@ var Gantt = function () {
         key: 'bind_events',
         value: function bind_events() {
             this.bind_grid_click();
-            this.bind_bar_events();
+            if (!this.options.read_only) {
+                this.bind_bar_events();
+            }
         }
     }, {
         key: 'render',

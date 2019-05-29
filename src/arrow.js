@@ -10,13 +10,17 @@ export default class Arrow {
 
         this.calculate_path();
         this.draw();
-        this.bind_events();
-        this.setup_events();
+
+        if (!gantt.options.read_only) {
+            this.bind_events();
+        }
     }
 
     bind_events() {
         this.handle_dblclick = this.handle_dblclick.bind(this);
         this.handle_mouseover = this.handle_mouseover.bind(this);
+
+        this.setup_events();
     }
 
     calculate_path() {
