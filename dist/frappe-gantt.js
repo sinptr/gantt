@@ -5343,8 +5343,8 @@
           value: function show_popup() {
               if (this.gantt.bar_being_dragged) return;
 
-              var start_date = date_utils.format(this.task._start, 'MMM D');
-              var end_date = date_utils.format(date_utils.add(this.task._end, -1, 'second'), 'MMM D');
+              var start_date = date_utils.format(this.task._start, 'MMM D', this.gantt.options.language);
+              var end_date = date_utils.format(date_utils.add(this.task._end, -1, 'second'), 'MMM D', this.gantt.options.language);
               var subtitle = start_date + ' - ' + end_date;
 
               this.gantt.show_popup({
