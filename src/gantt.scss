@@ -34,9 +34,9 @@ $circle-selected: #D1FAFF;
 	}
 	.tick {
 		stroke: $border-color;
-		stroke-width: 0.2;
+		stroke-width: 0.8;
 		&.thick {
-			stroke-width: 0.4;
+			stroke-width: 1;
 			stroke: darken($border-color, 20);
 		}
 	}

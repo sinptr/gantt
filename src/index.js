@@ -1,5 +1,6 @@
 import date_utils from './date_utils';
 import { $, createSVG } from './svg_utils';
+import moment from 'moment';
 import Bar from './bar';
 import Arrow from './arrow';
 import Popup from './popup';
@@ -92,7 +93,8 @@ export default class Gantt {
             custom_popup_html: null,
             language: 'en',
             calendar: [],
-            working_hours: 8
+            workStartHour: 8,
+            workEndHour: 16
         };
         this.options = Object.assign({}, default_options, options);
     }
@@ -101,8 +103,15 @@ export default class Gantt {
         // prepare tasks
         this.tasks = tasks.map((task, i) => {
             // convert to Date objects
-            task._start = date_utils.parse(task.start);
-            task._end = date_utils.parse(task.end);
+            task._start = this.placeDateInWorkingRange(
+                date_utils.parse(task.start)
+            );
+            task._end = this.placeDateInWorkingRange(
+                date_utils.parse(task.end)
+            );
+            task.duration =
+                task.duration ||
+                this.compute_task_duration(task._start, task._end);
 
             // make task invalid if duration too large
             if (date_utils.diff(task._end, task._start, 'year') > 10) {
@@ -246,7 +255,7 @@ export default class Gantt {
             this.gantt_start = date_utils.add(this.gantt_start, -2, 'year');
             this.gantt_end = date_utils.add(this.gantt_end, 2, 'year');
         } else {
-            this.gantt_start = date_utils.add(this.gantt_start, -1, 'month');
+            this.gantt_start = date_utils.add(this.gantt_start, -1, 'day');
             this.gantt_end = date_utils.add(this.gantt_end, 1, 'month');
         }
     }
@@ -277,9 +286,46 @@ export default class Gantt {
 
     bind_events() {
         this.bind_grid_click();
+        this.bind_resize();
         if (!this.options.read_only) {
             this.bind_bar_events();
         }
+    }
+
+    // TODO: finish chart resize
+    bind_resize() {
+        let frame = null;
+        this.$svg.addEventListener('wheel', e => {
+            // TODO: delete false then finish
+            if (e.ctrlKey && this.options.view_mode === 'Day' && false) {
+                e.preventDefault();
+                this.options.column_width -= e.deltaY * 0.05;
+                if (this.options.column_width < 16) {
+                    this.options.column_width = 16;
+                }
+                if (frame) {
+                    cancelAnimationFrame(frame);
+                    frame = null;
+                }
+                frame = requestAnimationFrame(() => {
+                    this.bars.forEach(bar => {
+                        bar.update_bar_position({
+                            x: bar.compute_x(),
+                            width: bar.compute_width()
+                        });
+                    });
+                    this.layers.date
+                        .querySelectorAll('.lower-text')
+                        .forEach((date, i) => {
+                            date.setAttribute(
+                                'x',
+                                i * this.options.column_width +
+                                    this.options.column_width / 2
+                            );
+                        });
+                });
+            }
+        });
     }
 
     render() {
@@ -427,10 +473,7 @@ export default class Gantt {
     make_grid_highlights() {
         // highlight today's date
         if (this.view_is('Day')) {
-            const x =
-                date_utils.diff(date_utils.today(), this.gantt_start, 'hour') /
-                this.options.step *
-                this.options.column_width;
+            const x = 0;
             const y = 0;
 
             const width = this.options.column_width;
@@ -823,7 +866,7 @@ export default class Gantt {
 
             bars.forEach(bar => {
                 const $bar = bar.$bar;
-                $bar.finaldx = this.get_snap_position(dx);
+                $bar.finaldx = dx;
 
                 if (is_resizing_left) {
                     if (parent_bar_id === bar.task.id) {
@@ -876,20 +919,23 @@ export default class Gantt {
         });
 
         $.on(this.$svg, 'mouseup', e => {
-            this.bar_being_dragged = null;
-            if (new_position !== null) {
-                this.trigger_event('order_change', [
-                    parent_bar_id,
-                    new_position
-                ]);
-                new_position = null;
+            if (this.bar_being_dragged) {
+                this.bar_being_dragged = null;
+                if (new_position !== null) {
+                    this.trigger_event('order_change', [
+                        parent_bar_id,
+                        new_position
+                    ]);
+                    new_position = null;
+                    this.get_bar(parent_bar_id).set_action_completed();
+                }
+                bars.forEach(bar => {
+                    const $bar = bar.$bar;
+                    if (!$bar.finaldx) return;
+                    bar.date_changed(is_resizing_right || is_resizing_left);
+                    bar.set_action_completed();
+                });
             }
-            bars.forEach(bar => {
-                const $bar = bar.$bar;
-                if (!$bar.finaldx) return;
-                bar.date_changed();
-                bar.set_action_completed();
-            });
         });
 
         this.bind_bar_progress();
@@ -1087,6 +1133,7 @@ export default class Gantt {
         this.map_arrows_on_bar(this.get_bar(task_to.id));
         task_to.dependencies.set(task_from.id, type);
         this.setup_dependencies();
+        this.get_bar(task_to.id).date_changed();
         this.trigger_event('dependency_change', [task_from, task_to, type]);
     }
 
@@ -1095,6 +1142,162 @@ export default class Gantt {
         this.map_arrows_on_bars();
         this.setup_dependencies();
         this.trigger_event('dependency_change', [task_from, task_to, type]);
+    }
+
+    getNextWorkingDay(day) {
+        let result = new Date(day);
+        const { workStartHour } = this.options;
+
+        while (this.calendar.has(date_utils.format(result, 'YYYY-MM-DD'))) {
+            result = date_utils.add(result, 1, 'day');
+            result.setHours(workStartHour, 0, 0, 0);
+        }
+        return result;
+    }
+
+    placeDateInWorkingRange(date) {
+        const { workStartHour, workEndHour } = this.options;
+        const workingDate = moment(date);
+        const workStart = moment(workingDate).set({
+            hours: workStartHour,
+            minutes: 0,
+            seconds: 0,
+            milliseconds: 0
+        });
+        const workEnd = moment(workingDate).set({
+            hours: workEndHour,
+            minutes: 0,
+            seconds: 0,
+            milliseconds: 0
+        });
+        if (workingDate.isBetween(workStart, workEnd)) {
+            return this.getNextWorkingDay(date);
+        }
+
+        const res =
+            moment.min(workEnd, workingDate) === workEnd
+                ? workEnd.toDate()
+                : workStart.toDate();
+
+        return this.getNextWorkingDay(res);
+    }
+
+    computeTaskEndDate(startDate, duration) {
+        const { workStartHour, workEndHour } = this.options;
+        const workingHours = workEndHour - workStartHour;
+        const holidays = this.calendar;
+        const endDate = moment(startDate);
+        let remainDuration = duration;
+        while (
+            remainDuration > 0 ||
+            holidays.has(endDate.format('YYYY-MM-DD'))
+        ) {
+            const workingDayEnd = moment(endDate).set({
+                hour: workEndHour,
+                minute: 0,
+                second: 0,
+                millisecond: 0
+            });
+            const workingDayStart = moment(endDate).set({
+                hour: workStartHour,
+                minute: 0,
+                second: 0,
+                millisecond: 0
+            });
+            if (holidays.has(endDate.format('YYYY-MM-DD'))) {
+                endDate.add(1, 'day');
+            } else if (remainDuration - workingHours >= 0) {
+                remainDuration -= workingHours;
+                if (remainDuration === 0 && endDate.isSame(workingDayStart)) {
+                    endDate.add(-1, 'day').set({
+                        hour: workEndHour,
+                        minute: 0,
+                        second: 0,
+                        millisecond: 0
+                    });
+                }
+                endDate.add(1, 'day');
+            } else {
+                const timeOverflow = moment(endDate)
+                    .add(remainDuration, 'hour')
+                    .diff(workingDayEnd, 'hours', true);
+                if (timeOverflow > 0) {
+                    remainDuration = timeOverflow;
+                    endDate.add(1, 'day');
+                    endDate.set({
+                        hour: workStartHour,
+                        minute: 0,
+                        second: 0,
+                        millisecond: 0
+                    });
+                } else {
+                    endDate.add(remainDuration, 'hour');
+                    remainDuration = 0;
+                }
+            }
+        }
+
+        return this.placeDateInWorkingRange(endDate.toDate());
+    }
+
+    holidaysNum(start, end) {
+        const holidays = this.calendar;
+        const startDate = moment(start);
+        const endDate = moment(end);
+        let holidaysNum = 0;
+        for (startDate; startDate <= endDate; startDate.add(1, 'day')) {
+            if (holidays.has(startDate.format('YYYY-MM-DD'))) {
+                holidaysNum += 1;
+            }
+        }
+        return holidaysNum;
+    }
+
+    compute_task_duration(start, end) {
+        const startDate = moment(start);
+        const endDate = moment(end);
+        const { workStartHour, workEndHour } = this.options;
+        const workingHours = workEndHour - workStartHour;
+        const dayDiff = moment(endDate)
+            .set({
+                hour: 0,
+                minute: 0,
+                second: 0,
+                millisecond: 0
+            })
+            .diff(
+                moment(startDate)
+                    .add(1, 'day')
+                    .set({
+                        hour: 0,
+                        minute: 0,
+                        second: 0,
+                        millisecond: 0
+                    }),
+                'days'
+            );
+        const startDateHours = moment(startDate)
+            .set({ hour: workEndHour, minute: 0, second: 0, millisecond: 0 })
+            .diff(startDate, 'hours', true);
+        const endDateHours = endDate.diff(
+            moment(endDate).set({
+                hour: workStartHour,
+                minute: 0,
+                second: 0,
+                millisecond: 0
+            }),
+            'hours',
+            true
+        );
+        let duration = startDateHours + endDateHours;
+        if (dayDiff > 0) {
+            duration += (dayDiff - this.holidaysNum(start, end)) * workingHours;
+        }
+        if (dayDiff === -1 && startDate.date() === endDate.date()) {
+            duration = endDate.diff(startDate, 'hours', true);
+        }
+
+        return duration;
     }
 }
 

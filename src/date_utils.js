@@ -138,7 +138,7 @@ export default {
         return str;
     },
 
-    diff(date_a, date_b, scale = DAY) {
+    diff(date_a, date_b, scale = DAY, precise = true) {
         let milliseconds, seconds, hours, minutes, days, months, years;
 
         milliseconds = date_a - date_b;
@@ -153,17 +153,17 @@ export default {
             scale += 's';
         }
 
-        return Math.floor(
-            {
-                milliseconds,
-                seconds,
-                minutes,
-                hours,
-                days,
-                months,
-                years
-            }[scale]
-        );
+        const result = {
+            milliseconds,
+            seconds,
+            minutes,
+            hours,
+            days,
+            months,
+            years
+        }[scale];
+
+        return precise ? result : Math.floor(result);
     },
 
     today() {

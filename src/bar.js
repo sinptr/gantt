@@ -1,4 +1,5 @@
 import date_utils from './date_utils';
+import Enums from './enums';
 import { $, createSVG, animateSVG } from './svg_utils';
 
 export default class Bar {
@@ -266,12 +267,11 @@ export default class Bar {
 
             if (e.type === 'click') {
                 this.gantt.trigger_event('click', [this.task]);
+                this.show_popup();
             }
 
             this.gantt.unselect_all();
             this.group.classList.toggle('active');
-
-            this.show_popup();
         });
     }
 
@@ -297,24 +297,30 @@ export default class Bar {
         const bar = this.$bar;
         if (x) {
             // get all x values of parent task
-            const xs = Array.from(this.task.dependencies, ([dep]) => {
-                return this.gantt.get_bar(dep).x;
+            const xs = Array.from(this.task.dependencies, ([dep, type]) => {
+                const bar = this.gantt.get_bar(dep);
+                return type === Enums.dependency.types.START_TO_START
+                    ? bar.x
+                    : bar.x + bar.$bar.getWidth();
             });
             // child task must not go before parent
             const valid_x = xs.reduce((prev, curr) => {
                 return x >= curr;
             }, x);
             if (!valid_x) {
-                width = null;
-                return;
+                this.x = Math.max(...xs);
+            } else {
+                this.x = x;
             }
-            this.x = x;
         }
         if (y) {
             this.y = y;
         }
         this.group.setAttribute('transform', `translate(${this.x}, ${this.y})`);
-        if (width && width >= this.gantt.options.column_width) {
+        if (
+            width &&
+            width >= this.gantt.options.column_width / this.gantt.options.step
+        ) {
             this.update_attr(bar, 'width', width);
         }
         this.update_label_position();
@@ -361,27 +367,55 @@ export default class Bar {
         }
     }
 
-    date_changed() {
-        let changed = false;
-        const { new_start_date, new_end_date } = this.compute_start_end_date();
+    compute_width() {
+        return (
+            date_utils.diff(this.task._end, this.task._start, 'hour') /
+            this.gantt.options.step *
+            this.gantt.options.column_width
+        );
+    }
+
+    date_changed(resizing = false) {
+        let { new_start_date, new_end_date } = this.compute_start_end_date();
+        if (resizing) {
+            this.task.duration = this.gantt.compute_task_duration(
+                this.gantt.placeDateInWorkingRange(new_start_date),
+                this.gantt.placeDateInWorkingRange(new_end_date)
+            );
+            new_end_date = this.gantt.placeDateInWorkingRange(new_end_date);
+        }
+        new_start_date = this.gantt.placeDateInWorkingRange(new_start_date);
+        if (!resizing) {
+            new_end_date = this.gantt.computeTaskEndDate(
+                new_start_date,
+                this.task.duration
+            );
+        }
+
+        const changed =
+            +new_start_date !== +this.task._start ||
+            +new_end_date !== +this.task._end;
 
         if (Number(this.task._start) !== Number(new_start_date)) {
-            changed = true;
             this.task._start = new_start_date;
         }
 
         if (Number(this.task._end) !== Number(new_end_date)) {
-            changed = true;
             this.task._end = new_end_date;
         }
 
-        if (!changed) return;
+        this.update_bar_position({
+            x: this.compute_x(),
+            width: this.compute_width()
+        });
 
-        this.gantt.trigger_event('date_change', [
-            this.task,
-            new_start_date,
-            date_utils.add(new_end_date, -1, 'second')
-        ]);
+        if (changed) {
+            this.gantt.trigger_event('date_change', [
+                this.task,
+                new_start_date,
+                new_end_date
+            ]);
+        }
     }
 
     progress_changed() {

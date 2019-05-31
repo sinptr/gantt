@@ -2,6 +2,9 @@ import sass from 'rollup-plugin-sass';
 import uglify from 'rollup-plugin-uglify';
 import merge from 'deepmerge';
 import babel from 'rollup-plugin-babel';
+import resolve from 'rollup-plugin-node-resolve';
+import commonjs from 'rollup-plugin-commonjs';
+
 
 // TODO: write better config
 const enums = {
@@ -27,11 +30,13 @@ const dev = {
         format: 'umd'
     },
     plugins: [
+        resolve(),
+        commonjs(),
         sass({
             output: 'dist/frappe-gantt.css'
         }),
         babel({
-            exclude: 'node_modules/**',
+            exclude: 'node_modules/**'
         })
     ]
 };
