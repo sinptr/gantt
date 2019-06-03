@@ -233,8 +233,6 @@ export default class Gantt {
     }
 
     setup_gantt_dates() {
-        this.gantt_start = this.gantt_end = new Date();
-
         for (let task of this.tasks) {
             // set global start and end date
             if (!this.gantt_start || task._start < this.gantt_start) {
@@ -243,6 +241,13 @@ export default class Gantt {
             if (!this.gantt_end || task._end > this.gantt_end) {
                 this.gantt_end = task._end;
             }
+        }
+
+        if (!this.gantt_start) {
+            this.gantt_start = new Date();
+        }
+        if (!this.gantt_end) {
+            this.gantt_end = new Date();
         }
 
         this.gantt_start = date_utils.start_of(this.gantt_start, 'day');
