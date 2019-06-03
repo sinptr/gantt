@@ -233,6 +233,8 @@ export default class Gantt {
     }
 
     setup_gantt_dates() {
+        this.gantt_start = null;
+        this.gantt_end = null;
         for (let task of this.tasks) {
             // set global start and end date
             if (!this.gantt_start || task._start < this.gantt_start) {
@@ -262,10 +264,10 @@ export default class Gantt {
             this.gantt_end = date_utils.add(this.gantt_end, 1, 'year');
         } else if (this.view_is('Year')) {
             this.gantt_start = date_utils.add(this.gantt_start, -2, 'year');
-            this.gantt_end = date_utils.add(this.gantt_end, 2, 'year');
+            this.gantt_end = date_utils.add(this.gantt_end, 12, 'year');
         } else {
             this.gantt_start = date_utils.add(this.gantt_start, -1, 'day');
-            this.gantt_end = date_utils.add(this.gantt_end, 1, 'month');
+            this.gantt_end = date_utils.add(this.gantt_end, 1, 'year');
         }
     }
 

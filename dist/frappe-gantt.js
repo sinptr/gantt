@@ -6349,8 +6349,8 @@
       }, {
           key: 'setup_gantt_dates',
           value: function setup_gantt_dates() {
-              this.gantt_start = this.gantt_end = new Date();
-
+              this.gantt_start = null;
+              this.gantt_end = null;
               var _iteratorNormalCompletion3 = true;
               var _didIteratorError3 = false;
               var _iteratorError3 = undefined;
@@ -6382,6 +6382,13 @@
                   }
               }
 
+              if (!this.gantt_start) {
+                  this.gantt_start = new Date();
+              }
+              if (!this.gantt_end) {
+                  this.gantt_end = new Date();
+              }
+
               this.gantt_start = date_utils.start_of(this.gantt_start, 'day');
               this.gantt_end = date_utils.start_of(this.gantt_end, 'day');
 
@@ -6394,10 +6401,10 @@
                   this.gantt_end = date_utils.add(this.gantt_end, 1, 'year');
               } else if (this.view_is('Year')) {
                   this.gantt_start = date_utils.add(this.gantt_start, -2, 'year');
-                  this.gantt_end = date_utils.add(this.gantt_end, 2, 'year');
+                  this.gantt_end = date_utils.add(this.gantt_end, 12, 'year');
               } else {
                   this.gantt_start = date_utils.add(this.gantt_start, -1, 'day');
-                  this.gantt_end = date_utils.add(this.gantt_end, 1, 'month');
+                  this.gantt_end = date_utils.add(this.gantt_end, 1, 'year');
               }
           }
       }, {
