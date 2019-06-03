@@ -1,10 +1,10 @@
 import date_utils from './date_utils';
 import { $, createSVG } from './svg_utils';
-import moment from 'moment';
 import Bar from './bar';
 import Arrow from './arrow';
 import Popup from './popup';
 import Enums from './enums';
+import Calendar from './calendar';
 
 import './gantt.scss';
 
@@ -103,15 +103,15 @@ export default class Gantt {
         // prepare tasks
         this.tasks = tasks.map((task, i) => {
             // convert to Date objects
-            task._start = this.placeDateInWorkingRange(
+            task._start = this.calendar.placeDateInWorkingRange(
                 date_utils.parse(task.start)
             );
-            task._end = this.placeDateInWorkingRange(
+            task._end = this.calendar.placeDateInWorkingRange(
                 date_utils.parse(task.end)
             );
             task.duration =
                 task.duration ||
-                this.compute_task_duration(task._start, task._end);
+                this.calendar.computeTaskDuration(task._start, task._end);
 
             // make task invalid if duration too large
             if (date_utils.diff(task._end, task._start, 'year') > 10) {
@@ -220,12 +220,16 @@ export default class Gantt {
     }
 
     setup_calendar() {
-        try {
-            this.calendar = new Map(this.options.calendar);
-        } catch (e) {
-            this.calendar = new Map();
-            console.error(new Error(`Wrong calendar format: ${e.message}`));
-        }
+        const {
+            calendar,
+            workStartHour,
+            workEndHour,
+            date_format
+        } = this.options;
+        this.calendar = new Calendar(calendar, date_format, [
+            workStartHour,
+            workEndHour
+        ]);
     }
 
     setup_gantt_dates() {
@@ -540,8 +544,7 @@ export default class Gantt {
         }
 
         const is_weekend =
-            this.calendar.has(date_utils.format(date, 'YYYY-MM-DD')) &&
-            this.options.view_mode === 'Day';
+            this.calendar.isHoliday(date) && this.options.view_mode === 'Day';
 
         const date_text = {
             'Quarter Day_lower': date_utils.format(
@@ -1142,162 +1145,6 @@ export default class Gantt {
         this.map_arrows_on_bars();
         this.setup_dependencies();
         this.trigger_event('dependency_change', [task_from, task_to, type]);
-    }
-
-    getNextWorkingDay(day) {
-        let result = new Date(day);
-        const { workStartHour } = this.options;
-
-        while (this.calendar.has(date_utils.format(result, 'YYYY-MM-DD'))) {
-            result = date_utils.add(result, 1, 'day');
-            result.setHours(workStartHour, 0, 0, 0);
-        }
-        return result;
-    }
-
-    placeDateInWorkingRange(date) {
-        const { workStartHour, workEndHour } = this.options;
-        const workingDate = moment(date);
-        const workStart = moment(workingDate).set({
-            hours: workStartHour,
-            minutes: 0,
-            seconds: 0,
-            milliseconds: 0
-        });
-        const workEnd = moment(workingDate).set({
-            hours: workEndHour,
-            minutes: 0,
-            seconds: 0,
-            milliseconds: 0
-        });
-        if (workingDate.isBetween(workStart, workEnd)) {
-            return this.getNextWorkingDay(date);
-        }
-
-        const res =
-            moment.min(workEnd, workingDate) === workEnd
-                ? workEnd.toDate()
-                : workStart.toDate();
-
-        return this.getNextWorkingDay(res);
-    }
-
-    computeTaskEndDate(startDate, duration) {
-        const { workStartHour, workEndHour } = this.options;
-        const workingHours = workEndHour - workStartHour;
-        const holidays = this.calendar;
-        const endDate = moment(startDate);
-        let remainDuration = duration;
-        while (
-            remainDuration > 0 ||
-            holidays.has(endDate.format('YYYY-MM-DD'))
-        ) {
-            const workingDayEnd = moment(endDate).set({
-                hour: workEndHour,
-                minute: 0,
-                second: 0,
-                millisecond: 0
-            });
-            const workingDayStart = moment(endDate).set({
-                hour: workStartHour,
-                minute: 0,
-                second: 0,
-                millisecond: 0
-            });
-            if (holidays.has(endDate.format('YYYY-MM-DD'))) {
-                endDate.add(1, 'day');
-            } else if (remainDuration - workingHours >= 0) {
-                remainDuration -= workingHours;
-                if (remainDuration === 0 && endDate.isSame(workingDayStart)) {
-                    endDate.add(-1, 'day').set({
-                        hour: workEndHour,
-                        minute: 0,
-                        second: 0,
-                        millisecond: 0
-                    });
-                }
-                endDate.add(1, 'day');
-            } else {
-                const timeOverflow = moment(endDate)
-                    .add(remainDuration, 'hour')
-                    .diff(workingDayEnd, 'hours', true);
-                if (timeOverflow > 0) {
-                    remainDuration = timeOverflow;
-                    endDate.add(1, 'day');
-                    endDate.set({
-                        hour: workStartHour,
-                        minute: 0,
-                        second: 0,
-                        millisecond: 0
-                    });
-                } else {
-                    endDate.add(remainDuration, 'hour');
-                    remainDuration = 0;
-                }
-            }
-        }
-
-        return this.placeDateInWorkingRange(endDate.toDate());
-    }
-
-    holidaysNum(start, end) {
-        const holidays = this.calendar;
-        const startDate = moment(start);
-        const endDate = moment(end);
-        let holidaysNum = 0;
-        for (startDate; startDate <= endDate; startDate.add(1, 'day')) {
-            if (holidays.has(startDate.format('YYYY-MM-DD'))) {
-                holidaysNum += 1;
-            }
-        }
-        return holidaysNum;
-    }
-
-    compute_task_duration(start, end) {
-        const startDate = moment(start);
-        const endDate = moment(end);
-        const { workStartHour, workEndHour } = this.options;
-        const workingHours = workEndHour - workStartHour;
-        const dayDiff = moment(endDate)
-            .set({
-                hour: 0,
-                minute: 0,
-                second: 0,
-                millisecond: 0
-            })
-            .diff(
-                moment(startDate)
-                    .add(1, 'day')
-                    .set({
-                        hour: 0,
-                        minute: 0,
-                        second: 0,
-                        millisecond: 0
-                    }),
-                'days'
-            );
-        const startDateHours = moment(startDate)
-            .set({ hour: workEndHour, minute: 0, second: 0, millisecond: 0 })
-            .diff(startDate, 'hours', true);
-        const endDateHours = endDate.diff(
-            moment(endDate).set({
-                hour: workStartHour,
-                minute: 0,
-                second: 0,
-                millisecond: 0
-            }),
-            'hours',
-            true
-        );
-        let duration = startDateHours + endDateHours;
-        if (dayDiff > 0) {
-            duration += (dayDiff - this.holidaysNum(start, end)) * workingHours;
-        }
-        if (dayDiff === -1 && startDate.date() === endDate.date()) {
-            duration = endDate.diff(startDate, 'hours', true);
-        }
-
-        return duration;
     }
 }
 

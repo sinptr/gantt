@@ -382,16 +382,17 @@ export default class Bar {
 
     date_changed(resizing = false) {
         let { new_start_date, new_end_date } = this.compute_start_end_date();
+        const { calendar } = this.gantt;
         if (resizing) {
-            this.task.duration = this.gantt.compute_task_duration(
-                this.gantt.placeDateInWorkingRange(new_start_date),
-                this.gantt.placeDateInWorkingRange(new_end_date)
+            this.task.duration = calendar.computeTaskDuration(
+                calendar.placeDateInWorkingRange(new_start_date),
+                calendar.placeDateInWorkingRange(new_end_date)
             );
-            new_end_date = this.gantt.placeDateInWorkingRange(new_end_date);
+            new_end_date = calendar.placeDateInWorkingRange(new_end_date);
         }
-        new_start_date = this.gantt.placeDateInWorkingRange(new_start_date);
+        new_start_date = calendar.placeDateInWorkingRange(new_start_date);
         if (!resizing) {
-            new_end_date = this.gantt.computeTaskEndDate(
+            new_end_date = calendar.computeTaskEndDate(
                 new_start_date,
                 this.task.duration
             );
