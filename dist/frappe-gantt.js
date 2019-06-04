@@ -481,7 +481,7 @@
               this.y = this.compute_y();
               this.corner_radius = this.gantt.options.bar_corner_radius;
               this.duration = date_utils.diff(this.task._end, this.task._start, 'hour') / this.gantt.options.step;
-              this.width = this.gantt.options.column_width * this.duration;
+              this.width = this.compute_width();
               this.progress_width = this.gantt.options.column_width * this.duration * (this.task.progress / 100) || 0;
               this.group = createSVG('g', {
                   class: 'bar-wrapper ' + (this.task.custom_class || ''),
@@ -6008,7 +6008,7 @@
               var workStartHour = this.workStartHour,
                   workEndHour = this.workEndHour;
 
-              var workingDate = moment(date);
+              var workingDate = moment.utc(date);
               var workStart = moment(workingDate).startOf('day').hours(workStartHour);
               var workEnd = moment(workStart).hours(workEndHour);
               if (workingDate.isBetween(workStart, workEnd)) {
@@ -6177,8 +6177,8 @@
               // prepare tasks
               this.tasks = tasks.map(function (task, i) {
                   // convert to Date objects
-                  task._start = _this.calendar.placeDateInWorkingRange(date_utils.parse(task.start));
-                  task._end = _this.calendar.placeDateInWorkingRange(date_utils.parse(task.end));
+                  task._start = _this.calendar.placeDateInWorkingRange(moment(task.start));
+                  task._end = task.duration ? _this.calendar.computeTaskEndDate(task._start, task.duration) : _this.calendar.placeDateInWorkingRange(moment(task.end));
                   task.duration = task.duration || _this.calendar.computeTaskDuration(task._start, task._end);
 
                   // make task invalid if duration too large

@@ -31,7 +31,7 @@ export default class Bar {
         this.duration =
             date_utils.diff(this.task._end, this.task._start, 'hour') /
             this.gantt.options.step;
-        this.width = this.gantt.options.column_width * this.duration;
+        this.width = this.compute_width();
         this.progress_width =
             this.gantt.options.column_width *
                 this.duration *

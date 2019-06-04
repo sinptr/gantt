@@ -7,6 +7,7 @@ import Enums from './enums';
 import Calendar from './calendar';
 
 import './gantt.scss';
+import moment from 'moment';
 
 export default class Gantt {
     constructor(wrapper, tasks, options) {
@@ -105,11 +106,11 @@ export default class Gantt {
         this.tasks = tasks.map((task, i) => {
             // convert to Date objects
             task._start = this.calendar.placeDateInWorkingRange(
-                date_utils.parse(task.start)
+                moment(task.start)
             );
-            task._end = this.calendar.placeDateInWorkingRange(
-                date_utils.parse(task.end)
-            );
+            task._end = task.duration
+                ? this.calendar.computeTaskEndDate(task._start, task.duration)
+                : this.calendar.placeDateInWorkingRange(moment(task.end));
             task.duration =
                 task.duration ||
                 this.calendar.computeTaskDuration(task._start, task._end);

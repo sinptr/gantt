@@ -105,7 +105,7 @@ class Calendar {
      */
     placeDateInWorkingRange(date) {
         const { workStartHour, workEndHour } = this;
-        const workingDate = moment(date);
+        const workingDate = moment.utc(date);
         const workStart = moment(workingDate)
             .startOf('day')
             .hours(workStartHour);
