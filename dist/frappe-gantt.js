@@ -6173,6 +6173,7 @@
           value: function setup_tasks(tasks) {
               var _this = this;
 
+              tasks = JSON.parse(JSON.stringify(tasks));
               // prepare tasks
               this.tasks = tasks.map(function (task, i) {
                   // convert to Date objects

@@ -100,6 +100,7 @@ export default class Gantt {
     }
 
     setup_tasks(tasks) {
+        tasks = JSON.parse(JSON.stringify(tasks));
         // prepare tasks
         this.tasks = tasks.map((task, i) => {
             // convert to Date objects
