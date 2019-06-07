@@ -95,7 +95,8 @@ export default class Gantt {
             language: 'en',
             calendar: [],
             workStartHour: 8,
-            workEndHour: 16
+            workEndHour: 16,
+            is_sortable: true
         };
         this.options = Object.assign({}, default_options, options);
     }
@@ -848,7 +849,11 @@ export default class Gantt {
             const dx = e.offsetX - x_on_start;
             const dy = e.offsetY - y_on_start;
 
-            if (this.options.is_draggable && is_dragging) {
+            if (
+                this.options.is_draggable &&
+                this.options.is_sortable &&
+                is_dragging
+            ) {
                 const row = Math.floor(
                     (e.offsetY - this.options.header_height - 10) /
                         (this.options.bar_height + this.options.padding)

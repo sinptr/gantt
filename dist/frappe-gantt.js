@@ -6008,7 +6008,7 @@
               var workStartHour = this.workStartHour,
                   workEndHour = this.workEndHour;
 
-              var workingDate = moment.utc(date);
+              var workingDate = moment(date);
               var workStart = moment(workingDate).startOf('day').hours(workStartHour);
               var workEnd = moment(workStart).hours(workEndHour);
               if (workingDate.isBetween(workStart, workEnd)) {
@@ -6164,7 +6164,8 @@
                   language: 'en',
                   calendar: [],
                   workStartHour: 8,
-                  workEndHour: 16
+                  workEndHour: 16,
+                  is_sortable: true
               };
               this.options = Object.assign({}, default_options, options);
           }
@@ -7030,7 +7031,7 @@
                   var dx = e.offsetX - x_on_start;
                   var dy = e.offsetY - y_on_start;
 
-                  if (_this8.options.is_draggable && is_dragging) {
+                  if (_this8.options.is_draggable && _this8.options.is_sortable && is_dragging) {
                       var row = Math.floor((e.offsetY - _this8.options.header_height - 10) / (_this8.options.bar_height + _this8.options.padding));
                       if (row >= 0 && row < _this8.tasks.length) {
                           var _bar = _this8.get_bar(parent_bar_id);
