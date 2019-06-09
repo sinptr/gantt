@@ -7313,12 +7313,21 @@
       }, {
           key: 'add_dependency',
           value: function add_dependency(task_from, task_to, type) {
+              var _this12 = this;
+
               this.make_arrow(task_from, task_to, type);
               this.map_arrows_on_bar(this.get_bar(task_from.id));
               this.map_arrows_on_bar(this.get_bar(task_to.id));
               task_to.dependencies.set(task_from.id, type);
               this.setup_dependencies();
-              this.get_bar(task_to.id).date_changed();
+              var bar = this.get_bar(task_to.id);
+              bar.update_bar_position({ x: bar.compute_x() });
+              bar.date_changed();
+              this.get_all_dependent_tasks(task_to.id).forEach(function (id) {
+                  var depBar = _this12.get_bar(id);
+                  depBar.update_bar_position({ x: depBar.compute_x() });
+                  depBar.date_changed();
+              });
               this.trigger_event('dependency_change', [task_from, task_to, type]);
           }
       }, {
