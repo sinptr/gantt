@@ -768,14 +768,7 @@
                       return type === enums.dependency.types.START_TO_START ? bar.x : bar.x + bar.$bar.getWidth();
                   });
                   // child task must not go before parent
-                  var valid_x = xs.reduce(function (prev, curr) {
-                      return x >= curr;
-                  }, x);
-                  if (!valid_x) {
-                      this.x = Math.max.apply(Math, toConsumableArray(xs));
-                  } else {
-                      this.x = x;
-                  }
+                  this.x = Math.max.apply(Math, toConsumableArray(xs).concat([x]));
               }
               if (y) {
                   this.y = y;

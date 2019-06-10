@@ -309,14 +309,7 @@ export default class Bar {
                     : bar.x + bar.$bar.getWidth();
             });
             // child task must not go before parent
-            const valid_x = xs.reduce((prev, curr) => {
-                return x >= curr;
-            }, x);
-            if (!valid_x) {
-                this.x = Math.max(...xs);
-            } else {
-                this.x = x;
-            }
+            this.x = Math.max(...xs, x);
         }
         if (y) {
             this.y = y;
