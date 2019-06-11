@@ -1260,8 +1260,8 @@
               };
 
               if (options.position === 'left') {
-                  this.parent.style.left = relative_position.left + (target_position.width + 10) + 'px';
-                  this.parent.style.top = relative_position.top + 'px';
+                  this.parent.style.left = relative_position.left + (target_position.width + 20) + 'px';
+                  this.parent.style.top = relative_position.top - 7 + 'px';
 
                   this.pointer.style.transform = 'rotateZ(90deg)';
                   this.pointer.style.left = '-7px';
@@ -6958,6 +6958,7 @@
 
               $.on(this.$svg, 'mousedown', '.handle-group .circle', function (e, element) {
                   is_connecting = !is_connecting;
+                  _this8.hide_popup();
                   var types = enums.dependency.types;
 
                   var bar_wrapper = $.closest('.bar-wrapper', element);
@@ -7030,6 +7031,8 @@
 
               $.on(this.$svg, 'mousemove', function (e) {
                   if (!action_in_progress()) return;
+                  _this8.hide_popup();
+
                   var dx = e.offsetX - x_on_start;
                   var dy = e.offsetY - y_on_start;
 

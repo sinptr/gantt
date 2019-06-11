@@ -761,6 +761,7 @@ export default class Gantt {
 
         $.on(this.$svg, 'mousedown', '.handle-group .circle', (e, element) => {
             is_connecting = !is_connecting;
+            this.hide_popup();
             const { dependency: { types } } = Enums;
             const bar_wrapper = $.closest('.bar-wrapper', element);
             const task_id = bar_wrapper.getAttribute('data-id');
@@ -846,6 +847,8 @@ export default class Gantt {
 
         $.on(this.$svg, 'mousemove', e => {
             if (!action_in_progress()) return;
+            this.hide_popup();
+
             const dx = e.offsetX - x_on_start;
             const dy = e.offsetY - y_on_start;
 
