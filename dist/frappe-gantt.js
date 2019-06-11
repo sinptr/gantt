@@ -531,6 +531,7 @@
                   this.draw_thumbnail();
               }
 
+              this.draw_dependency_handles();
               if (this.gantt.options.resizing) {
                   this.draw_resize_handles();
               }
@@ -643,6 +644,29 @@
               });
           }
       }, {
+          key: 'draw_dependency_handles',
+          value: function draw_dependency_handles() {
+              if (this.invalid) return;
+
+              var bar = this.$bar;
+
+              createSVG('circle', {
+                  cx: bar.getX() - 10,
+                  cy: bar.getY() + this.height / 2,
+                  r: this.height / 6,
+                  class: 'circle left',
+                  append_to: this.handle_group
+              });
+
+              createSVG('circle', {
+                  cx: bar.getX() + bar.getWidth() + 10,
+                  cy: bar.getY() + this.height / 2,
+                  r: this.height / 6,
+                  class: 'circle right',
+                  append_to: this.handle_group
+              });
+          }
+      }, {
           key: 'draw_resize_handles',
           value: function draw_resize_handles() {
               if (this.invalid) return;
@@ -669,22 +693,6 @@
                   rx: this.corner_radius,
                   ry: this.corner_radius,
                   class: 'handle left',
-                  append_to: this.handle_group
-              });
-
-              createSVG('circle', {
-                  cx: bar.getX() - 10,
-                  cy: bar.getY() + this.height / 2,
-                  r: this.height / 6,
-                  class: 'circle left',
-                  append_to: this.handle_group
-              });
-
-              createSVG('circle', {
-                  cx: bar.getX() + bar.getWidth() + 10,
-                  cy: bar.getY() + this.height / 2,
-                  r: this.height / 6,
-                  class: 'circle right',
                   append_to: this.handle_group
               });
 

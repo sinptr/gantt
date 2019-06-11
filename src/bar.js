@@ -82,6 +82,7 @@ export default class Bar {
             this.draw_thumbnail();
         }
 
+        this.draw_dependency_handles();
         if (this.gantt.options.resizing) {
             this.draw_resize_handles();
         }
@@ -185,6 +186,28 @@ export default class Bar {
         });
     }
 
+    draw_dependency_handles() {
+        if (this.invalid) return;
+
+        const bar = this.$bar;
+
+        createSVG('circle', {
+            cx: bar.getX() - 10,
+            cy: bar.getY() + this.height / 2,
+            r: this.height / 6,
+            class: 'circle left',
+            append_to: this.handle_group
+        });
+
+        createSVG('circle', {
+            cx: bar.getX() + bar.getWidth() + 10,
+            cy: bar.getY() + this.height / 2,
+            r: this.height / 6,
+            class: 'circle right',
+            append_to: this.handle_group
+        });
+    }
+
     draw_resize_handles() {
         if (this.invalid) return;
 
@@ -210,22 +233,6 @@ export default class Bar {
             rx: this.corner_radius,
             ry: this.corner_radius,
             class: 'handle left',
-            append_to: this.handle_group
-        });
-
-        createSVG('circle', {
-            cx: bar.getX() - 10,
-            cy: bar.getY() + this.height / 2,
-            r: this.height / 6,
-            class: 'circle left',
-            append_to: this.handle_group
-        });
-
-        createSVG('circle', {
-            cx: bar.getX() + bar.getWidth() + 10,
-            cy: bar.getY() + this.height / 2,
-            r: this.height / 6,
-            class: 'circle right',
             append_to: this.handle_group
         });
 
