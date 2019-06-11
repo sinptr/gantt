@@ -787,9 +787,7 @@
               }
               this.update_label_position();
 
-              if (this.gantt.options.resizing) {
-                  this.update_handle_position();
-              }
+              this.update_handle_position();
 
               this.update_progressbar_position();
               this.update_arrow_position();
@@ -999,8 +997,11 @@
           key: 'update_handle_position',
           value: function update_handle_position() {
               var bar = this.$bar;
-              this.handle_group.querySelector('.handle.left').setAttribute('x', bar.getX() + 1);
-              this.handle_group.querySelector('.handle.right').setAttribute('x', bar.getEndX() - 9);
+
+              if (this.gantt.options.resizing) {
+                  this.handle_group.querySelector('.handle.left').setAttribute('x', bar.getX() + 1);
+                  this.handle_group.querySelector('.handle.right').setAttribute('x', bar.getEndX() - 9);
+              }
 
               this.handle_group.querySelector('.circle.left').setAttribute('cx', String(bar.getX() - 10));
               this.handle_group.querySelector('.circle.right').setAttribute('cx', String(bar.getEndX() + 10));
@@ -7097,9 +7098,7 @@
               $.on(this.$container, 'scroll', function (e) {
                   var scrollTop = e.currentTarget.scrollTop;
 
-                  requestAnimationFrame(function () {
-                      _this8.layers.date.setAttribute('transform', 'translate(0,' + scrollTop + ')');
-                  });
+                  _this8.layers.date.setAttribute('transform', 'translate(0,' + scrollTop + ')');
               });
 
               $.on(this.$svg, 'mouseup', function (e) {

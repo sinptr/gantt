@@ -927,12 +927,10 @@ export default class Gantt {
 
         $.on(this.$container, 'scroll', e => {
             const { scrollTop } = e.currentTarget;
-            requestAnimationFrame(() => {
-                this.layers.date.setAttribute(
-                    'transform',
-                    `translate(0,${scrollTop})`
-                );
-            });
+            this.layers.date.setAttribute(
+                'transform',
+                `translate(0,${scrollTop})`
+            );
         });
 
         $.on(this.$svg, 'mouseup', e => {

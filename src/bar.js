@@ -330,9 +330,7 @@ export default class Bar {
         }
         this.update_label_position();
 
-        if (this.gantt.options.resizing) {
-            this.update_handle_position();
-        }
+        this.update_handle_position();
 
         this.update_progressbar_position();
         this.update_arrow_position();
@@ -570,12 +568,15 @@ export default class Bar {
 
     update_handle_position() {
         const bar = this.$bar;
-        this.handle_group
-            .querySelector('.handle.left')
-            .setAttribute('x', bar.getX() + 1);
-        this.handle_group
-            .querySelector('.handle.right')
-            .setAttribute('x', bar.getEndX() - 9);
+
+        if (this.gantt.options.resizing) {
+            this.handle_group
+                .querySelector('.handle.left')
+                .setAttribute('x', bar.getX() + 1);
+            this.handle_group
+                .querySelector('.handle.right')
+                .setAttribute('x', bar.getEndX() - 9);
+        }
 
         this.handle_group
             .querySelector('.circle.left')
