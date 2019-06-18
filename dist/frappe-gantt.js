@@ -7341,6 +7341,26 @@
               this.setup_dependencies();
               this.trigger_event('dependency_change', [task_from, task_to, type]);
           }
+      }, {
+          key: 'getTasks',
+          value: function getTasks() {
+              return this.tasks.map(function (_ref3) {
+                  var id = _ref3.id,
+                      name = _ref3.name,
+                      start = _ref3._start,
+                      end = _ref3._end,
+                      duration = _ref3.duration,
+                      dependencies = _ref3.dependencies;
+                  return {
+                      id: id,
+                      name: name,
+                      start: start,
+                      end: end,
+                      duration: duration,
+                      dependencies: [].concat(toConsumableArray(dependencies))
+                  };
+              });
+          }
       }]);
       return Gantt;
   }();

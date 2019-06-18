@@ -1168,6 +1168,26 @@ export default class Gantt {
         this.setup_dependencies();
         this.trigger_event('dependency_change', [task_from, task_to, type]);
     }
+
+    getTasks() {
+        return this.tasks.map(
+            ({
+                id,
+                name,
+                _start: start,
+                _end: end,
+                duration,
+                dependencies
+            }) => ({
+                id,
+                name,
+                start,
+                end,
+                duration,
+                dependencies: [...dependencies]
+            })
+        );
+    }
 }
 
 function generate_id(task) {
