@@ -105,7 +105,7 @@ class Calendar {
      */
     placeDateInWorkingRange(date) {
         const { workStartHour, workEndHour } = this;
-        const workingDate = moment(date);
+        const workingDate = moment(this.getNextWorkingDay(date));
         const workStart = moment(workingDate)
             .startOf('day')
             .hours(workStartHour)
@@ -114,15 +114,12 @@ class Calendar {
             .hours(workEndHour)
             .add(-1, 'second');
         if (workingDate.isBetween(workStart, workEnd)) {
-            return this.getNextWorkingDay(date);
+            return date;
         }
 
-        const res =
-            moment.min(workEnd, workingDate) === workEnd
-                ? workEnd.toDate()
-                : workStart.toDate();
-
-        return this.getNextWorkingDay(res);
+        return moment.min(workEnd, workingDate) === workEnd
+            ? workEnd.toDate()
+            : workStart.toDate();
     }
 
     /**

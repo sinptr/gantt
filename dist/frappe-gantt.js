@@ -6010,16 +6010,14 @@
               var workStartHour = this.workStartHour,
                   workEndHour = this.workEndHour;
 
-              var workingDate = moment(date);
+              var workingDate = moment(this.getNextWorkingDay(date));
               var workStart = moment(workingDate).startOf('day').hours(workStartHour).add(1, 'second');
               var workEnd = moment(workStart).hours(workEndHour).add(-1, 'second');
               if (workingDate.isBetween(workStart, workEnd)) {
-                  return this.getNextWorkingDay(date);
+                  return date;
               }
 
-              var res = moment.min(workEnd, workingDate) === workEnd ? workEnd.toDate() : workStart.toDate();
-
-              return this.getNextWorkingDay(res);
+              return moment.min(workEnd, workingDate) === workEnd ? workEnd.toDate() : workStart.toDate();
           }
 
           /**
