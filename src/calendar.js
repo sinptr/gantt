@@ -108,8 +108,11 @@ class Calendar {
         const workingDate = moment(date);
         const workStart = moment(workingDate)
             .startOf('day')
-            .hours(workStartHour);
-        const workEnd = moment(workStart).hours(workEndHour);
+            .hours(workStartHour)
+            .add(1, 'second');
+        const workEnd = moment(workStart)
+            .hours(workEndHour)
+            .add(-1, 'second');
         if (workingDate.isBetween(workStart, workEnd)) {
             return this.getNextWorkingDay(date);
         }

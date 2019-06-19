@@ -6011,8 +6011,8 @@
                   workEndHour = this.workEndHour;
 
               var workingDate = moment(date);
-              var workStart = moment(workingDate).startOf('day').hours(workStartHour);
-              var workEnd = moment(workStart).hours(workEndHour);
+              var workStart = moment(workingDate).startOf('day').hours(workStartHour).add(1, 'second');
+              var workEnd = moment(workStart).hours(workEndHour).add(-1, 'second');
               if (workingDate.isBetween(workStart, workEnd)) {
                   return this.getNextWorkingDay(date);
               }
