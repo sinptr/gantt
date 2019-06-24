@@ -190,9 +190,18 @@ export default class Bar {
         if (this.invalid) return;
 
         const bar = this.$bar;
+        const handle_width = 8;
+        const bar_too_small = this.width < handle_width * 2 + 2;
+        let circle_left = bar.getX() - 10;
+        let circle_right = bar.getEndX() + 10;
+
+        if (bar_too_small) {
+            circle_left -= handle_width;
+            circle_right += handle_width;
+        }
 
         createSVG('circle', {
-            cx: bar.getX() - 10,
+            cx: circle_left,
             cy: bar.getY() + this.height / 2,
             r: this.height / 6,
             class: 'circle left',
@@ -200,7 +209,7 @@ export default class Bar {
         });
 
         createSVG('circle', {
-            cx: bar.getX() + bar.getWidth() + 10,
+            cx: circle_right,
             cy: bar.getY() + this.height / 2,
             r: this.height / 6,
             class: 'circle right',
@@ -213,9 +222,14 @@ export default class Bar {
 
         const bar = this.$bar;
         const handle_width = 8;
+        const bar_too_small = this.width < handle_width * 2 + 2;
+        let x_right = bar.getX() + bar.getWidth();
+        let x_left = bar.getX();
+        x_right += bar_too_small ? 1 : -(handle_width + 1);
+        x_left += bar_too_small ? -(handle_width + 1) : 1;
 
         createSVG('rect', {
-            x: bar.getX() + bar.getWidth() - 9,
+            x: x_right,
             y: bar.getY() + 1,
             width: handle_width,
             height: this.height - 2,
@@ -226,7 +240,7 @@ export default class Bar {
         });
 
         createSVG('rect', {
-            x: bar.getX() + 1,
+            x: x_left,
             y: bar.getY() + 1,
             width: handle_width,
             height: this.height - 2,
@@ -317,16 +331,17 @@ export default class Bar {
             });
             // child task must not go before parent
             this.x = Math.max(...xs, x);
+            if (this.x !== x) {
+                width = 0;
+            }
         }
         if (y) {
             this.y = y;
         }
         this.group.setAttribute('transform', `translate(${this.x}, ${this.y})`);
-        if (
-            width &&
-            width >= this.gantt.options.column_width / this.gantt.options.step
-        ) {
-            this.update_attr(bar, 'width', width);
+        if (width) {
+            const min_width = this.gantt.options.column_width / this.gantt.options.step;
+            this.update_attr(bar, 'width', Math.max(width, min_width));
         }
         this.update_label_position();
 
@@ -568,22 +583,36 @@ export default class Bar {
 
     update_handle_position() {
         const bar = this.$bar;
+        const handle_width = 8;
+        const bar_too_small = bar.getWidth() < handle_width * 2 + 2;
+        let x_right = bar.getX() + bar.getWidth();
+        let x_left = bar.getX();
+        x_right += bar_too_small ? 1 : -(handle_width + 1);
+        x_left += bar_too_small ? -(handle_width + 1) : 1;
+
+        let circle_left = bar.getX() - 10;
+        let circle_right = bar.getEndX() + 10;
+
+        if (bar_too_small) {
+            circle_left -= handle_width;
+            circle_right += handle_width;
+        }
 
         if (this.gantt.options.resizing) {
             this.handle_group
                 .querySelector('.handle.left')
-                .setAttribute('x', bar.getX() + 1);
+                .setAttribute('x', x_left);
             this.handle_group
                 .querySelector('.handle.right')
-                .setAttribute('x', bar.getEndX() - 9);
+                .setAttribute('x', x_right);
         }
 
         this.handle_group
             .querySelector('.circle.left')
-            .setAttribute('cx', String(bar.getX() - 10));
+            .setAttribute('cx', String(circle_left));
         this.handle_group
             .querySelector('.circle.right')
-            .setAttribute('cx', String(bar.getEndX() + 10));
+            .setAttribute('cx', String(circle_right));
 
         const handle = this.group.querySelector('.handle.progress');
         handle &&

@@ -171,13 +171,15 @@ export default class Gantt {
     }
 
     setup_dependencies() {
-        this.dependency_map = {};
-        for (let t of this.tasks) {
-            for (let d of t.dependencies.keys()) {
-                this.dependency_map[d] = this.dependency_map[d] || [];
-                this.dependency_map[d].push(t.id);
-            }
-        }
+        const dependencyMap = new Map();
+        this.tasks.forEach(({ id, dependencies }) => {
+            dependencies.forEach((type, taskId) => {
+                const map = dependencyMap.get(taskId) || new Map();
+                map.set(id, type);
+                dependencyMap.set(taskId, map);
+            });
+        });
+        this.dependency_map = dependencyMap;
     }
 
     refresh(tasks) {
@@ -828,10 +830,36 @@ export default class Gantt {
             y_on_start = e.offsetY;
 
             parent_bar_id = bar_wrapper.getAttribute('data-id');
-            const ids = [
-                parent_bar_id,
-                ...this.get_all_dependent_tasks(parent_bar_id)
-            ];
+
+            ///
+            let ids = [parent_bar_id];
+            const allowType = is_resizing_left
+                ? Enums.dependency.types.START_TO_START
+                : Enums.dependency.types.END_TO_START;
+            if (this.dependency_map.has(parent_bar_id)) {
+                if (is_resizing_left || is_resizing_right) {
+                    this.dependency_map
+                        .get(parent_bar_id)
+                        .forEach((type, childTaskId) => {
+                            if (type === allowType) {
+                                ids = [
+                                    ...ids,
+                                    ...this.get_all_dependent_tasks(
+                                        childTaskId
+                                    ),
+                                    childTaskId
+                                ];
+                            }
+                        });
+                } else {
+                    ids = [
+                        ...ids,
+                        ...this.get_all_dependent_tasks(parent_bar_id)
+                    ];
+                }
+            }
+            ///
+            ids = [...new Set(ids).values()];
             bars = ids.map(id => this.get_bar(id));
 
             this.bar_being_dragged = parent_bar_id;
@@ -890,10 +918,12 @@ export default class Gantt {
 
                 if (is_resizing_left) {
                     if (parent_bar_id === bar.task.id) {
-                        bar.update_bar_position({
-                            x: $bar.ox + $bar.finaldx,
-                            width: $bar.owidth - $bar.finaldx
-                        });
+                        if ($bar.finaldx < $bar.owidth) {
+                            bar.update_bar_position({
+                                x: $bar.ox + $bar.finaldx,
+                                width: $bar.owidth - $bar.finaldx
+                            });
+                        }
                     } else {
                         bar.update_bar_position({
                             x: $bar.ox + $bar.finaldx
@@ -903,6 +933,10 @@ export default class Gantt {
                     if (parent_bar_id === bar.task.id) {
                         bar.update_bar_position({
                             width: $bar.owidth + $bar.finaldx
+                        });
+                    } else {
+                        bar.update_bar_position({
+                            x: $bar.ox + $bar.finaldx
                         });
                     }
                 } else if (is_dragging && this.options.is_draggable) {
@@ -948,9 +982,11 @@ export default class Gantt {
                     this.get_bar(parent_bar_id).set_action_completed();
                 }
                 bars.forEach(bar => {
-                    const $bar = bar.$bar;
-                    if (!$bar.finaldx) return;
-                    bar.date_changed(is_resizing_right || is_resizing_left);
+                    if (bar.task.id === parent_bar_id) {
+                        bar.date_changed(is_resizing_right || is_resizing_left);
+                    } else {
+                        bar.date_changed();
+                    }
                     bar.set_action_completed();
                 });
             }
@@ -1012,19 +1048,23 @@ export default class Gantt {
     }
 
     get_all_dependent_tasks(task_id) {
-        let out = [];
-        let to_process = [task_id];
-        while (to_process.length) {
-            const deps = to_process.reduce((acc, curr) => {
-                acc = acc.concat(this.dependency_map[curr]);
-                return acc;
-            }, []);
-
-            out = out.concat(deps);
-            to_process = deps.filter(d => !to_process.includes(d));
+        const tasksToProcess = new Set([task_id]);
+        const dependentTasks = new Set();
+        const { dependency_map: dependencyMap } = this;
+        while (tasksToProcess.size > 0) {
+            [...tasksToProcess.values()].forEach(id => {
+                tasksToProcess.delete(id);
+                dependentTasks.add(id);
+                if (dependencyMap.has(id)) {
+                    dependencyMap.get(id).forEach((_, key) => {
+                        tasksToProcess.add(key);
+                    });
+                }
+            });
         }
+        dependentTasks.delete(task_id);
 
-        return out.filter(Boolean);
+        return dependentTasks;
     }
 
     get_snap_position(dx) {
@@ -1139,7 +1179,7 @@ export default class Gantt {
     can_add_dependency(from_task, to_task) {
         const not_same_task = from_task.id !== to_task.id;
         const no_duplicate = !to_task.dependencies.has(from_task.id);
-        const no_loop = !this.get_all_dependent_tasks(to_task.id).includes(
+        const no_loop = !this.get_all_dependent_tasks(to_task.id).has(
             from_task.id
         );
         return not_same_task && no_duplicate && no_loop;

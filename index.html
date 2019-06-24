@@ -97,22 +97,12 @@
 				// custom_class: 'bar-milestone',
 				// thumbnail: 'https://mdn.mozillademos.org/files/6457/mdn_logo_only_color.png'
 			},
-			{
-				start: "2019-06-04T05:00:00.000Z",
-				end: "2019-06-04T06:00:00.000Z",
-				name: 'Jean Jacques doc!',
-				id: "Task_7",
-				progress: 0,
-				dependencies: [['Task_0', Enums.dependency.types.START_TO_START]],
-				// custom_class: 'bar-milestone',
-				// thumbnail: 'https://mdn.mozillademos.org/files/6457/mdn_logo_only_color.png'
-			},
 		];
 		var gantt_chart = new Gantt(".gantt-target", tasks, {
 			bar_height: 20,
 			is_draggable: true,
 			progress: false,
-			resizing: false,
+			resizing: true,
             calendar: calendar,
 			on_click: function (task) {
 				console.log(task);
@@ -135,6 +125,7 @@
 			view_mode: 'Day',
 			language: 'ru'
 		});
+		console.log(gantt_chart.getTasks());
 	</script>
 </body>
 </html>

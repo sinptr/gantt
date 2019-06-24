@@ -649,9 +649,18 @@
               if (this.invalid) return;
 
               var bar = this.$bar;
+              var handle_width = 8;
+              var bar_too_small = this.width < handle_width * 2 + 2;
+              var circle_left = bar.getX() - 10;
+              var circle_right = bar.getEndX() + 10;
+
+              if (bar_too_small) {
+                  circle_left -= handle_width;
+                  circle_right += handle_width;
+              }
 
               createSVG('circle', {
-                  cx: bar.getX() - 10,
+                  cx: circle_left,
                   cy: bar.getY() + this.height / 2,
                   r: this.height / 6,
                   class: 'circle left',
@@ -659,7 +668,7 @@
               });
 
               createSVG('circle', {
-                  cx: bar.getX() + bar.getWidth() + 10,
+                  cx: circle_right,
                   cy: bar.getY() + this.height / 2,
                   r: this.height / 6,
                   class: 'circle right',
@@ -673,9 +682,14 @@
 
               var bar = this.$bar;
               var handle_width = 8;
+              var bar_too_small = this.width < handle_width * 2 + 2;
+              var x_right = bar.getX() + bar.getWidth();
+              var x_left = bar.getX();
+              x_right += bar_too_small ? 1 : -(handle_width + 1);
+              x_left += bar_too_small ? -(handle_width + 1) : 1;
 
               createSVG('rect', {
-                  x: bar.getX() + bar.getWidth() - 9,
+                  x: x_right,
                   y: bar.getY() + 1,
                   width: handle_width,
                   height: this.height - 2,
@@ -686,7 +700,7 @@
               });
 
               createSVG('rect', {
-                  x: bar.getX() + 1,
+                  x: x_left,
                   y: bar.getY() + 1,
                   width: handle_width,
                   height: this.height - 2,
@@ -777,13 +791,17 @@
                   });
                   // child task must not go before parent
                   this.x = Math.max.apply(Math, toConsumableArray(xs).concat([x]));
+                  if (this.x !== x) {
+                      width = 0;
+                  }
               }
               if (y) {
                   this.y = y;
               }
               this.group.setAttribute('transform', 'translate(' + this.x + ', ' + this.y + ')');
-              if (width && width >= this.gantt.options.column_width / this.gantt.options.step) {
-                  this.update_attr(bar, 'width', width);
+              if (width) {
+                  var min_width = this.gantt.options.column_width / this.gantt.options.step;
+                  this.update_attr(bar, 'width', Math.max(width, min_width));
               }
               this.update_label_position();
 
@@ -997,14 +1015,28 @@
           key: 'update_handle_position',
           value: function update_handle_position() {
               var bar = this.$bar;
+              var handle_width = 8;
+              var bar_too_small = bar.getWidth() < handle_width * 2 + 2;
+              var x_right = bar.getX() + bar.getWidth();
+              var x_left = bar.getX();
+              x_right += bar_too_small ? 1 : -(handle_width + 1);
+              x_left += bar_too_small ? -(handle_width + 1) : 1;
 
-              if (this.gantt.options.resizing) {
-                  this.handle_group.querySelector('.handle.left').setAttribute('x', bar.getX() + 1);
-                  this.handle_group.querySelector('.handle.right').setAttribute('x', bar.getEndX() - 9);
+              var circle_left = bar.getX() - 10;
+              var circle_right = bar.getEndX() + 10;
+
+              if (bar_too_small) {
+                  circle_left -= handle_width;
+                  circle_right += handle_width;
               }
 
-              this.handle_group.querySelector('.circle.left').setAttribute('cx', String(bar.getX() - 10));
-              this.handle_group.querySelector('.circle.right').setAttribute('cx', String(bar.getEndX() + 10));
+              if (this.gantt.options.resizing) {
+                  this.handle_group.querySelector('.handle.left').setAttribute('x', x_left);
+                  this.handle_group.querySelector('.handle.right').setAttribute('x', x_right);
+              }
+
+              this.handle_group.querySelector('.circle.left').setAttribute('cx', String(circle_left));
+              this.handle_group.querySelector('.circle.right').setAttribute('cx', String(circle_right));
 
               var handle = this.group.querySelector('.handle.progress');
               handle && handle.setAttribute('points', this.get_progress_polygon_points());
@@ -6240,54 +6272,18 @@
       }, {
           key: 'setup_dependencies',
           value: function setup_dependencies() {
-              this.dependency_map = {};
-              var _iteratorNormalCompletion = true;
-              var _didIteratorError = false;
-              var _iteratorError = undefined;
+              var dependencyMap = new Map();
+              this.tasks.forEach(function (_ref) {
+                  var id = _ref.id,
+                      dependencies = _ref.dependencies;
 
-              try {
-                  for (var _iterator = this.tasks[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
-                      var t = _step.value;
-                      var _iteratorNormalCompletion2 = true;
-                      var _didIteratorError2 = false;
-                      var _iteratorError2 = undefined;
-
-                      try {
-                          for (var _iterator2 = t.dependencies.keys()[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
-                              var d = _step2.value;
-
-                              this.dependency_map[d] = this.dependency_map[d] || [];
-                              this.dependency_map[d].push(t.id);
-                          }
-                      } catch (err) {
-                          _didIteratorError2 = true;
-                          _iteratorError2 = err;
-                      } finally {
-                          try {
-                              if (!_iteratorNormalCompletion2 && _iterator2.return) {
-                                  _iterator2.return();
-                              }
-                          } finally {
-                              if (_didIteratorError2) {
-                                  throw _iteratorError2;
-                              }
-                          }
-                      }
-                  }
-              } catch (err) {
-                  _didIteratorError = true;
-                  _iteratorError = err;
-              } finally {
-                  try {
-                      if (!_iteratorNormalCompletion && _iterator.return) {
-                          _iterator.return();
-                      }
-                  } finally {
-                      if (_didIteratorError) {
-                          throw _iteratorError;
-                      }
-                  }
-              }
+                  dependencies.forEach(function (type, taskId) {
+                      var map = dependencyMap.get(taskId) || new Map();
+                      map.set(id, type);
+                      dependencyMap.set(taskId, map);
+                  });
+              });
+              this.dependency_map = dependencyMap;
           }
       }, {
           key: 'refresh',
@@ -6353,13 +6349,13 @@
           value: function setup_gantt_dates() {
               this.gantt_start = null;
               this.gantt_end = null;
-              var _iteratorNormalCompletion3 = true;
-              var _didIteratorError3 = false;
-              var _iteratorError3 = undefined;
+              var _iteratorNormalCompletion = true;
+              var _didIteratorError = false;
+              var _iteratorError = undefined;
 
               try {
-                  for (var _iterator3 = this.tasks[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
-                      var task = _step3.value;
+                  for (var _iterator = this.tasks[Symbol.iterator](), _step; !(_iteratorNormalCompletion = (_step = _iterator.next()).done); _iteratorNormalCompletion = true) {
+                      var task = _step.value;
 
                       // set global start and end date
                       if (!this.gantt_start || task._start < this.gantt_start) {
@@ -6370,16 +6366,16 @@
                       }
                   }
               } catch (err) {
-                  _didIteratorError3 = true;
-                  _iteratorError3 = err;
+                  _didIteratorError = true;
+                  _iteratorError = err;
               } finally {
                   try {
-                      if (!_iteratorNormalCompletion3 && _iterator3.return) {
-                          _iterator3.return();
+                      if (!_iteratorNormalCompletion && _iterator.return) {
+                          _iterator.return();
                       }
                   } finally {
-                      if (_didIteratorError3) {
-                          throw _iteratorError3;
+                      if (_didIteratorError) {
+                          throw _iteratorError;
                       }
                   }
               }
@@ -6493,13 +6489,13 @@
               this.layers = {};
               var layers = ['grid', 'arrows', 'progress', 'bar', 'details', 'date'];
               // make group layers
-              var _iteratorNormalCompletion4 = true;
-              var _didIteratorError4 = false;
-              var _iteratorError4 = undefined;
+              var _iteratorNormalCompletion2 = true;
+              var _didIteratorError2 = false;
+              var _iteratorError2 = undefined;
 
               try {
-                  for (var _iterator4 = layers[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
-                      var layer = _step4.value;
+                  for (var _iterator2 = layers[Symbol.iterator](), _step2; !(_iteratorNormalCompletion2 = (_step2 = _iterator2.next()).done); _iteratorNormalCompletion2 = true) {
+                      var layer = _step2.value;
 
                       this.layers[layer] = createSVG('g', {
                           class: layer,
@@ -6507,16 +6503,16 @@
                       });
                   }
               } catch (err) {
-                  _didIteratorError4 = true;
-                  _iteratorError4 = err;
+                  _didIteratorError2 = true;
+                  _iteratorError2 = err;
               } finally {
                   try {
-                      if (!_iteratorNormalCompletion4 && _iterator4.return) {
-                          _iterator4.return();
+                      if (!_iteratorNormalCompletion2 && _iterator2.return) {
+                          _iterator2.return();
                       }
                   } finally {
-                      if (_didIteratorError4) {
-                          throw _iteratorError4;
+                      if (_didIteratorError2) {
+                          throw _iteratorError2;
                       }
                   }
               }
@@ -6604,13 +6600,13 @@
               var tick_y = this.options.header_height + this.options.padding / 2;
               var tick_height = (this.options.bar_height + this.options.padding) * (this.tasks.length + 1);
 
-              var _iteratorNormalCompletion5 = true;
-              var _didIteratorError5 = false;
-              var _iteratorError5 = undefined;
+              var _iteratorNormalCompletion3 = true;
+              var _didIteratorError3 = false;
+              var _iteratorError3 = undefined;
 
               try {
-                  for (var _iterator5 = this.dates[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
-                      var date = _step5.value;
+                  for (var _iterator3 = this.dates[Symbol.iterator](), _step3; !(_iteratorNormalCompletion3 = (_step3 = _iterator3.next()).done); _iteratorNormalCompletion3 = true) {
+                      var date = _step3.value;
 
                       var tick_class = 'tick';
                       // thick tick for monday
@@ -6639,16 +6635,16 @@
                       }
                   }
               } catch (err) {
-                  _didIteratorError5 = true;
-                  _iteratorError5 = err;
+                  _didIteratorError3 = true;
+                  _iteratorError3 = err;
               } finally {
                   try {
-                      if (!_iteratorNormalCompletion5 && _iterator5.return) {
-                          _iterator5.return();
+                      if (!_iteratorNormalCompletion3 && _iterator3.return) {
+                          _iterator3.return();
                       }
                   } finally {
-                      if (_didIteratorError5) {
-                          throw _iteratorError5;
+                      if (_didIteratorError3) {
+                          throw _iteratorError3;
                       }
                   }
               }
@@ -6677,13 +6673,13 @@
       }, {
           key: 'make_dates',
           value: function make_dates() {
-              var _iteratorNormalCompletion6 = true;
-              var _didIteratorError6 = false;
-              var _iteratorError6 = undefined;
+              var _iteratorNormalCompletion4 = true;
+              var _didIteratorError4 = false;
+              var _iteratorError4 = undefined;
 
               try {
-                  for (var _iterator6 = this.get_dates_to_draw()[Symbol.iterator](), _step6; !(_iteratorNormalCompletion6 = (_step6 = _iterator6.next()).done); _iteratorNormalCompletion6 = true) {
-                      var date = _step6.value;
+                  for (var _iterator4 = this.get_dates_to_draw()[Symbol.iterator](), _step4; !(_iteratorNormalCompletion4 = (_step4 = _iterator4.next()).done); _iteratorNormalCompletion4 = true) {
+                      var date = _step4.value;
 
                       createSVG('text', {
                           x: date.lower_x,
@@ -6709,16 +6705,16 @@
                       }
                   }
               } catch (err) {
-                  _didIteratorError6 = true;
-                  _iteratorError6 = err;
+                  _didIteratorError4 = true;
+                  _iteratorError4 = err;
               } finally {
                   try {
-                      if (!_iteratorNormalCompletion6 && _iterator6.return) {
-                          _iterator6.return();
+                      if (!_iteratorNormalCompletion4 && _iterator4.return) {
+                          _iterator4.return();
                       }
                   } finally {
-                      if (_didIteratorError6) {
-                          throw _iteratorError6;
+                      if (_didIteratorError4) {
+                          throw _iteratorError4;
                       }
                   }
               }
@@ -6807,18 +6803,18 @@
               var _this5 = this;
 
               this.arrows = [];
-              var _iteratorNormalCompletion7 = true;
-              var _didIteratorError7 = false;
-              var _iteratorError7 = undefined;
+              var _iteratorNormalCompletion5 = true;
+              var _didIteratorError5 = false;
+              var _iteratorError5 = undefined;
 
               try {
                   var _loop = function _loop() {
-                      var task = _step7.value;
+                      var task = _step5.value;
 
-                      var arrows = Array.from(task.dependencies, function (_ref) {
-                          var _ref2 = slicedToArray(_ref, 2),
-                              task_id = _ref2[0],
-                              type = _ref2[1];
+                      var arrows = Array.from(task.dependencies, function (_ref2) {
+                          var _ref3 = slicedToArray(_ref2, 2),
+                              task_id = _ref3[0],
+                              type = _ref3[1];
 
                           var dependency = _this5.get_task(task_id);
                           if (!dependency) return;
@@ -6831,20 +6827,20 @@
                       _this5.arrows = _this5.arrows.concat(arrows);
                   };
 
-                  for (var _iterator7 = this.tasks[Symbol.iterator](), _step7; !(_iteratorNormalCompletion7 = (_step7 = _iterator7.next()).done); _iteratorNormalCompletion7 = true) {
+                  for (var _iterator5 = this.tasks[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
                       _loop();
                   }
               } catch (err) {
-                  _didIteratorError7 = true;
-                  _iteratorError7 = err;
+                  _didIteratorError5 = true;
+                  _iteratorError5 = err;
               } finally {
                   try {
-                      if (!_iteratorNormalCompletion7 && _iterator7.return) {
-                          _iterator7.return();
+                      if (!_iteratorNormalCompletion5 && _iterator5.return) {
+                          _iterator5.return();
                       }
                   } finally {
-                      if (_didIteratorError7) {
-                          throw _iteratorError7;
+                      if (_didIteratorError5) {
+                          throw _iteratorError5;
                       }
                   }
               }
@@ -6861,33 +6857,33 @@
           value: function map_arrows_on_bars() {
               var _this6 = this;
 
-              var _iteratorNormalCompletion8 = true;
-              var _didIteratorError8 = false;
-              var _iteratorError8 = undefined;
+              var _iteratorNormalCompletion6 = true;
+              var _didIteratorError6 = false;
+              var _iteratorError6 = undefined;
 
               try {
                   var _loop2 = function _loop2() {
-                      var bar = _step8.value;
+                      var bar = _step6.value;
 
                       bar.arrows = _this6.arrows.filter(function (arrow) {
                           return arrow.from_task.task.id === bar.task.id || arrow.to_task.task.id === bar.task.id;
                       });
                   };
 
-                  for (var _iterator8 = this.bars[Symbol.iterator](), _step8; !(_iteratorNormalCompletion8 = (_step8 = _iterator8.next()).done); _iteratorNormalCompletion8 = true) {
+                  for (var _iterator6 = this.bars[Symbol.iterator](), _step6; !(_iteratorNormalCompletion6 = (_step6 = _iterator6.next()).done); _iteratorNormalCompletion6 = true) {
                       _loop2();
                   }
               } catch (err) {
-                  _didIteratorError8 = true;
-                  _iteratorError8 = err;
+                  _didIteratorError6 = true;
+                  _iteratorError6 = err;
               } finally {
                   try {
-                      if (!_iteratorNormalCompletion8 && _iterator8.return) {
-                          _iterator8.return();
+                      if (!_iteratorNormalCompletion6 && _iterator6.return) {
+                          _iterator6.return();
                       }
                   } finally {
-                      if (_didIteratorError8) {
-                          throw _iteratorError8;
+                      if (_didIteratorError6) {
+                          throw _iteratorError6;
                       }
                   }
               }
@@ -7011,7 +7007,23 @@
                   y_on_start = e.offsetY;
 
                   parent_bar_id = bar_wrapper.getAttribute('data-id');
-                  var ids = [parent_bar_id].concat(toConsumableArray(_this8.get_all_dependent_tasks(parent_bar_id)));
+
+                  ///
+                  var ids = [parent_bar_id];
+                  var allowType = is_resizing_left ? enums.dependency.types.START_TO_START : enums.dependency.types.END_TO_START;
+                  if (_this8.dependency_map.has(parent_bar_id)) {
+                      if (is_resizing_left || is_resizing_right) {
+                          _this8.dependency_map.get(parent_bar_id).forEach(function (type, childTaskId) {
+                              if (type === allowType) {
+                                  ids = [].concat(toConsumableArray(ids), toConsumableArray(_this8.get_all_dependent_tasks(childTaskId)), [childTaskId]);
+                              }
+                          });
+                      } else {
+                          ids = [].concat(toConsumableArray(ids), toConsumableArray(_this8.get_all_dependent_tasks(parent_bar_id)));
+                      }
+                  }
+                  ///
+                  ids = [].concat(toConsumableArray(new Set(ids).values()));
                   bars = ids.map(function (id) {
                       return _this8.get_bar(id);
                   });
@@ -7061,10 +7073,12 @@
 
                       if (is_resizing_left) {
                           if (parent_bar_id === bar.task.id) {
-                              bar.update_bar_position({
-                                  x: $bar.ox + $bar.finaldx,
-                                  width: $bar.owidth - $bar.finaldx
-                              });
+                              if ($bar.finaldx < $bar.owidth) {
+                                  bar.update_bar_position({
+                                      x: $bar.ox + $bar.finaldx,
+                                      width: $bar.owidth - $bar.finaldx
+                                  });
+                              }
                           } else {
                               bar.update_bar_position({
                                   x: $bar.ox + $bar.finaldx
@@ -7074,6 +7088,10 @@
                           if (parent_bar_id === bar.task.id) {
                               bar.update_bar_position({
                                   width: $bar.owidth + $bar.finaldx
+                              });
+                          } else {
+                              bar.update_bar_position({
+                                  x: $bar.ox + $bar.finaldx
                               });
                           }
                       } else if (is_dragging && _this8.options.is_draggable) {
@@ -7111,9 +7129,11 @@
                           _this8.get_bar(parent_bar_id).set_action_completed();
                       }
                       bars.forEach(function (bar) {
-                          var $bar = bar.$bar;
-                          if (!$bar.finaldx) return;
-                          bar.date_changed(is_resizing_right || is_resizing_left);
+                          if (bar.task.id === parent_bar_id) {
+                              bar.date_changed(is_resizing_right || is_resizing_left);
+                          } else {
+                              bar.date_changed();
+                          }
                           bar.set_action_completed();
                       });
                   }
@@ -7179,23 +7199,24 @@
       }, {
           key: 'get_all_dependent_tasks',
           value: function get_all_dependent_tasks(task_id) {
-              var _this10 = this;
+              var tasksToProcess = new Set([task_id]);
+              var dependentTasks = new Set();
+              var dependencyMap = this.dependency_map;
 
-              var out = [];
-              var to_process = [task_id];
-              while (to_process.length) {
-                  var deps = to_process.reduce(function (acc, curr) {
-                      acc = acc.concat(_this10.dependency_map[curr]);
-                      return acc;
-                  }, []);
-
-                  out = out.concat(deps);
-                  to_process = deps.filter(function (d) {
-                      return !to_process.includes(d);
+              while (tasksToProcess.size > 0) {
+                  [].concat(toConsumableArray(tasksToProcess.values())).forEach(function (id) {
+                      tasksToProcess.delete(id);
+                      dependentTasks.add(id);
+                      if (dependencyMap.has(id)) {
+                          dependencyMap.get(id).forEach(function (_, key) {
+                              tasksToProcess.add(key);
+                          });
+                      }
                   });
               }
+              dependentTasks.delete(task_id);
 
-              return out.filter(Boolean);
+              return dependentTasks;
           }
       }, {
           key: 'get_snap_position',
@@ -7226,7 +7247,7 @@
       }, {
           key: 'view_is',
           value: function view_is(modes) {
-              var _this11 = this;
+              var _this10 = this;
 
               if (typeof modes === 'string') {
                   return this.options.view_mode === modes;
@@ -7234,7 +7255,7 @@
 
               if (Array.isArray(modes)) {
                   return modes.some(function (mode) {
-                      return _this11.options.view_mode === mode;
+                      return _this10.options.view_mode === mode;
                   });
               }
 
@@ -7308,13 +7329,13 @@
           value: function can_add_dependency(from_task, to_task) {
               var not_same_task = from_task.id !== to_task.id;
               var no_duplicate = !to_task.dependencies.has(from_task.id);
-              var no_loop = !this.get_all_dependent_tasks(to_task.id).includes(from_task.id);
+              var no_loop = !this.get_all_dependent_tasks(to_task.id).has(from_task.id);
               return not_same_task && no_duplicate && no_loop;
           }
       }, {
           key: 'add_dependency',
           value: function add_dependency(task_from, task_to, type) {
-              var _this12 = this;
+              var _this11 = this;
 
               this.make_arrow(task_from, task_to, type);
               this.map_arrows_on_bar(this.get_bar(task_from.id));
@@ -7325,7 +7346,7 @@
               bar.update_bar_position({ x: bar.compute_x() });
               bar.date_changed();
               this.get_all_dependent_tasks(task_to.id).forEach(function (id) {
-                  var depBar = _this12.get_bar(id);
+                  var depBar = _this11.get_bar(id);
                   depBar.update_bar_position({ x: depBar.compute_x() });
                   depBar.date_changed();
               });
@@ -7342,13 +7363,13 @@
       }, {
           key: 'getTasks',
           value: function getTasks() {
-              return this.tasks.map(function (_ref3) {
-                  var id = _ref3.id,
-                      name = _ref3.name,
-                      start = _ref3._start,
-                      end = _ref3._end,
-                      duration = _ref3.duration,
-                      dependencies = _ref3.dependencies;
+              return this.tasks.map(function (_ref4) {
+                  var id = _ref4.id,
+                      name = _ref4.name,
+                      start = _ref4._start,
+                      end = _ref4._end,
+                      duration = _ref4.duration,
+                      dependencies = _ref4.dependencies;
                   return {
                       id: id,
                       name: name,
