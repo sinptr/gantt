@@ -1,7 +1,6 @@
 import date_utils from './date_utils';
 import Enums from './enums';
 import { $, createSVG, animateSVG } from './svg_utils';
-import moment from 'moment';
 
 export default class Bar {
     constructor(gantt, task) {
@@ -13,7 +12,6 @@ export default class Bar {
 
     set_defaults(gantt, task) {
         this.action_completed = false;
-        this.min_width = 4;
         this.gantt = gantt;
         this.task = task;
     }
@@ -322,7 +320,6 @@ export default class Bar {
     }
 
     update_bar_position({ x = null, y = null, width = null }) {
-        console.log(moment());
         const bar = this.$bar;
         if (x) {
             // get all x values of parent task
@@ -343,7 +340,7 @@ export default class Bar {
         }
         this.group.setAttribute('transform', `translate(${this.x}, ${this.y})`);
         if (width) {
-            const { min_width } = this;
+            const min_width = this.gantt.options.column_width / this.gantt.options.step;
             this.update_attr(bar, 'width', Math.max(width, min_width));
         }
         this.update_label_position();
@@ -389,10 +386,11 @@ export default class Bar {
     }
 
     compute_width() {
-        const width = date_utils.diff(this.task._end, this.task._start, 'hour') /
+        return (
+            date_utils.diff(this.task._end, this.task._start, 'hour') /
             this.gantt.options.step *
-            this.gantt.options.column_width;
-        return Math.max(width, this.min_width);
+            this.gantt.options.column_width
+        );
     }
 
     date_changed(resizing = false) {
