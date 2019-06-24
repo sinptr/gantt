@@ -114,7 +114,7 @@ class Calendar {
             .hours(workEndHour)
             .add(-1, 'second');
         if (workingDate.isBetween(workStart, workEnd)) {
-            return date;
+            return workingDate.toDate();
         }
 
         return moment.min(workEnd, workingDate) === workEnd

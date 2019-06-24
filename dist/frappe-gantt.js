@@ -6049,7 +6049,7 @@
               var workStart = moment(workingDate).startOf('day').hours(workStartHour).add(1, 'second');
               var workEnd = moment(workStart).hours(workEndHour).add(-1, 'second');
               if (workingDate.isBetween(workStart, workEnd)) {
-                  return date;
+                  return workingDate.toDate();
               }
 
               return moment.min(workEnd, workingDate) === workEnd ? workEnd.toDate() : workStart.toDate();
