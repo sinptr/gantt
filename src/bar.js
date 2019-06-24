@@ -12,6 +12,7 @@ export default class Bar {
 
     set_defaults(gantt, task) {
         this.action_completed = false;
+        this.min_width = 4;
         this.gantt = gantt;
         this.task = task;
     }
@@ -340,7 +341,7 @@ export default class Bar {
         }
         this.group.setAttribute('transform', `translate(${this.x}, ${this.y})`);
         if (width) {
-            const min_width = this.gantt.options.column_width / this.gantt.options.step;
+            const { min_width } = this;
             this.update_attr(bar, 'width', Math.max(width, min_width));
         }
         this.update_label_position();
@@ -386,11 +387,11 @@ export default class Bar {
     }
 
     compute_width() {
-        return (
+        const width =
             date_utils.diff(this.task._end, this.task._start, 'hour') /
             this.gantt.options.step *
-            this.gantt.options.column_width
-        );
+            this.gantt.options.column_width;
+        return Math.max(width, this.min_width);
     }
 
     date_changed(resizing = false) {
