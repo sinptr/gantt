@@ -42,6 +42,7 @@
     "rollup": "^1.12.5",
     "rollup-plugin-babel": "^3.0.4",
     "rollup-plugin-commonjs": "^10.0.0",
+    "rollup-plugin-json": "^4.0.0",
     "rollup-plugin-node-resolve": "^5.0.0",
     "rollup-plugin-sass": "^0.5.3",
     "rollup-plugin-uglify": "^3.0.0"
@@ -50,6 +51,7 @@
     "dist"
   ],
   "dependencies": {
-    "moment": "^2.24.0"
+    "moment": "^2.24.0",
+    "moment-timezone": "^0.5.25"
   }
 }

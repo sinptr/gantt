@@ -1,4 +1,5 @@
 import moment from 'moment';
+import 'moment-timezone';
 
 class Calendar {
     /**
@@ -11,6 +12,7 @@ class Calendar {
         this.holidays = new Set(holidays);
         this.format = format;
         [this.workStartHour, this.workEndHour] = workingHours;
+        moment.tz.setDefault('America/New_York');
     }
 
     /**
