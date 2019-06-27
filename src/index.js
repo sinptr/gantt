@@ -987,7 +987,9 @@ export default class Gantt {
                     } else {
                         bar.date_changed();
                     }
-                    bar.set_action_completed();
+                    if (bar.$bar.finaldx) {
+                        bar.set_action_completed();
+                    }
                 });
             }
         });

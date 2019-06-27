@@ -1,6 +1,7 @@
 import date_utils from './date_utils';
 import Enums from './enums';
 import { $, createSVG, animateSVG } from './svg_utils';
+import moment from 'moment';
 
 export default class Bar {
     constructor(gantt, task) {
@@ -276,7 +277,6 @@ export default class Bar {
     }
 
     bind() {
-        if (this.invalid) return;
         this.setup_click_event();
     }
 
@@ -452,17 +452,13 @@ export default class Bar {
     compute_start_end_date() {
         const bar = this.$bar;
         const x_in_units = this.x / this.gantt.options.column_width;
-        const new_start_date = date_utils.add(
-            this.gantt.gantt_start,
-            x_in_units * this.gantt.options.step,
-            'hour'
-        );
+        const new_start_date = moment(this.gantt.gantt_start)
+            .add(x_in_units * this.gantt.options.step, 'hours')
+            .toDate();
         const width_in_units = bar.getWidth() / this.gantt.options.column_width;
-        const new_end_date = date_utils.add(
-            new_start_date,
-            width_in_units * this.gantt.options.step,
-            'hour'
-        );
+        const new_end_date = moment(new_start_date)
+            .add(width_in_units * this.gantt.options.step, 'hours')
+            .toDate();
 
         return { new_start_date, new_end_date };
     }
