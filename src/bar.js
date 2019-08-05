@@ -51,6 +51,7 @@ export default class Bar {
             class: 'handle-group',
             append_to: this.group
         });
+        this.color = this.isValidColor(this.task.color) ? this.task.color : '';
     }
 
     prepare_helpers() {
@@ -69,6 +70,10 @@ export default class Bar {
         SVGElement.prototype.getEndX = function() {
             return this.getX() + this.getWidth();
         };
+    }
+
+    isValidColor(color = '') {
+        return /(^#[0-9A-F]{6}$)|(^#[0-9A-F]{3}$)/i.test(color);
     }
 
     draw() {
@@ -101,6 +106,9 @@ export default class Bar {
             class: 'bar',
             append_to: this.bar_group
         });
+        if (this.color) {
+            this.$bar.style.fill = this.color;
+        }
 
         animateSVG(this.$bar, 'width', 0, this.width);
 
