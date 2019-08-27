@@ -11,9 +11,13 @@ export default class Bar {
         this.bind();
     }
 
+    get min_width() {
+        const { gantt } = this;
+        return gantt.view_is('Day') ? gantt.options.column_width - 1e-3 : 4;
+    }
+
     set_defaults(gantt, task) {
         this.action_completed = false;
-        this.min_width = 4;
         this.gantt = gantt;
         this.task = task;
     }
@@ -334,9 +338,7 @@ export default class Bar {
             // get all x values of parent task
             const xs = Array.from(this.task.dependencies, ([dep, type]) => {
                 const bar = this.gantt.get_bar(dep);
-                return type === Enums.dependency.types.START_TO_START
-                    ? bar.x
-                    : bar.x + bar.$bar.getWidth();
+                return bar.x;
             });
             // child task must not go before parent
             this.x = Math.max(...xs, x);

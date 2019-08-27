@@ -94,8 +94,8 @@ export default class Gantt {
             custom_popup_html: null,
             language: 'en',
             calendar: [],
-            workStartHour: 8,
-            workEndHour: 16,
+            workStartHour: 0,
+            workEndHour: 24,
             is_sortable: true
         };
         this.options = Object.assign({}, default_options, options);
@@ -107,14 +107,15 @@ export default class Gantt {
         this.tasks = tasks.map((task, i) => {
             // convert to Date objects
             task._start = this.calendar.placeDateInWorkingRange(
-                moment(task.start)
+                moment(task.start).startOf('day')
             );
-            task._end = task.duration
-                ? this.calendar.computeTaskEndDate(task._start, task.duration)
-                : this.calendar.placeDateInWorkingRange(moment(task.end));
-            task.duration =
-                task.duration ||
-                this.calendar.computeTaskDuration(task._start, task._end);
+            task._end = this.calendar.placeDateInWorkingRange(
+                moment(task.end).endOf('day')
+            );
+            task.duration = this.calendar.computeTaskDuration(
+                task._start,
+                task._end
+            );
 
             // make task invalid if duration too large
             if (date_utils.diff(task._end, task._start, 'year') > 10) {
@@ -826,8 +827,7 @@ export default class Gantt {
 
             bar_wrapper.classList.add('active');
 
-            x_on_start = e.offsetX;
-            y_on_start = e.offsetY;
+            [x_on_start, y_on_start] = getOffset(e);
 
             parent_bar_id = bar_wrapper.getAttribute('data-id');
 
@@ -877,8 +877,9 @@ export default class Gantt {
             if (!action_in_progress()) return;
             this.hide_popup();
 
-            const dx = e.offsetX - x_on_start;
-            const dy = e.offsetY - y_on_start;
+            const [offsetX, offsetY] = getOffset(e);
+            const dx = offsetX - x_on_start;
+            const dy = offsetY - y_on_start;
 
             if (
                 this.options.is_draggable &&
@@ -914,7 +915,9 @@ export default class Gantt {
 
             bars.forEach(bar => {
                 const $bar = bar.$bar;
-                $bar.finaldx = dx;
+                $bar.finaldx = this.view_is('Day')
+                    ? this.get_snap_position(dx)
+                    : dx;
 
                 if (is_resizing_left) {
                     if (parent_bar_id === bar.task.id) {
@@ -1007,8 +1010,8 @@ export default class Gantt {
 
         $.on(this.$svg, 'mousedown', '.handle.progress', (e, handle) => {
             is_resizing = true;
-            x_on_start = e.offsetX;
-            y_on_start = e.offsetY;
+
+            [x_on_start, y_on_start] = getOffset(e);
 
             const $bar_wrapper = $.closest('.bar-wrapper', handle);
             const id = $bar_wrapper.getAttribute('data-id');
@@ -1025,8 +1028,10 @@ export default class Gantt {
 
         $.on(this.$svg, 'mousemove', e => {
             if (!is_resizing) return;
-            let dx = e.offsetX - x_on_start;
-            let dy = e.offsetY - y_on_start;
+
+            const [offsetX, offsetY] = getOffset(e);
+            let dx = offsetX - x_on_start;
+            let dy = offsetY - y_on_start;
 
             if (dx > $bar_progress.max_dx) {
                 dx = $bar_progress.max_dx;
@@ -1240,4 +1245,11 @@ function generate_id(task) {
             .toString(36)
             .slice(2, 12)
     );
+}
+
+function getOffset({ currentTarget, clientX, clientY }) {
+    const { left, top } = currentTarget.getBoundingClientRect();
+    const offsetX = clientX - left;
+    const offsetY = clientY - top;
+    return [offsetX, offsetY];
 }

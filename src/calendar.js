@@ -88,10 +88,6 @@ class Calendar {
      */
     getNextWorkingDay(day) {
         const result = moment(day);
-        const { workStartHour } = this;
-        if (this.isHoliday(result)) {
-            result.startOf('day').hours(workStartHour);
-        }
         while (this.isHoliday(result)) {
             result.add(1, 'day');
         }
@@ -110,16 +106,22 @@ class Calendar {
             .startOf('day')
             .hours(workStartHour)
             .add(1, 'second');
-        const workEnd = moment(workStart)
+        const workEnd = moment(workingDate)
+            .startOf('day')
             .hours(workEndHour)
             .add(-1, 'second');
-        if (workingDate.isBetween(workStart, workEnd)) {
+        if (
+            workingDate.isBetween(
+                moment(workStart).add(-1, 'second'),
+                moment(workEnd)
+            )
+        ) {
             return workingDate.toDate();
         }
 
-        return moment.min(workEnd, workingDate) === workEnd
-            ? workEnd.toDate()
-            : workStart.toDate();
+        return moment.min(workStart, workingDate) === workingDate
+            ? workStart.toDate()
+            : workEnd.toDate();
     }
 
     /**

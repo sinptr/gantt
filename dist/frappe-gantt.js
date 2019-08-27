@@ -5072,7 +5072,6 @@
           key: 'set_defaults',
           value: function set_defaults(gantt, task) {
               this.action_completed = false;
-              this.min_width = 4;
               this.gantt = gantt;
               this.task = task;
           }
@@ -5409,7 +5408,7 @@
                           type = _ref3[1];
 
                       var bar = _this3.gantt.get_bar(dep);
-                      return type === enums.dependency.types.START_TO_START ? bar.x : bar.x + bar.$bar.getWidth();
+                      return bar.x;
                   });
                   // child task must not go before parent
                   this.x = Math.max.apply(Math, toConsumableArray(xs).concat([x]));
@@ -5693,6 +5692,13 @@
                       }
                   }
               }
+          }
+      }, {
+          key: 'min_width',
+          get: function get() {
+              var gantt = this.gantt;
+
+              return gantt.view_is('Day') ? gantt.options.column_width - 1e-3 : 4;
           }
       }]);
       return Bar;
@@ -6033,11 +6039,6 @@
           key: 'getNextWorkingDay',
           value: function getNextWorkingDay(day) {
               var result = moment(day);
-              var workStartHour = this.workStartHour;
-
-              if (this.isHoliday(result)) {
-                  result.startOf('day').hours(workStartHour);
-              }
               while (this.isHoliday(result)) {
                   result.add(1, 'day');
               }
@@ -6058,12 +6059,12 @@
 
               var workingDate = moment(this.getNextWorkingDay(date));
               var workStart = moment(workingDate).startOf('day').hours(workStartHour).add(1, 'second');
-              var workEnd = moment(workStart).hours(workEndHour).add(-1, 'second');
-              if (workingDate.isBetween(workStart, workEnd)) {
+              var workEnd = moment(workingDate).startOf('day').hours(workEndHour).add(-1, 'second');
+              if (workingDate.isBetween(moment(workStart).add(-1, 'second'), moment(workEnd))) {
                   return workingDate.toDate();
               }
 
-              return moment.min(workEnd, workingDate) === workEnd ? workEnd.toDate() : workStart.toDate();
+              return moment.min(workStart, workingDate) === workingDate ? workStart.toDate() : workEnd.toDate();
           }
 
           /**
@@ -6209,8 +6210,8 @@
                   custom_popup_html: null,
                   language: 'en',
                   calendar: [],
-                  workStartHour: 8,
-                  workEndHour: 16,
+                  workStartHour: 0,
+                  workEndHour: 24,
                   is_sortable: true
               };
               this.options = Object.assign({}, default_options, options);
@@ -6224,9 +6225,9 @@
               // prepare tasks
               this.tasks = tasks.map(function (task, i) {
                   // convert to Date objects
-                  task._start = _this.calendar.placeDateInWorkingRange(moment(task.start));
-                  task._end = task.duration ? _this.calendar.computeTaskEndDate(task._start, task.duration) : _this.calendar.placeDateInWorkingRange(moment(task.end));
-                  task.duration = task.duration || _this.calendar.computeTaskDuration(task._start, task._end);
+                  task._start = _this.calendar.placeDateInWorkingRange(moment(task.start).startOf('day'));
+                  task._end = _this.calendar.placeDateInWorkingRange(moment(task.end).endOf('day'));
+                  task.duration = _this.calendar.computeTaskDuration(task._start, task._end);
 
                   // make task invalid if duration too large
                   if (date_utils.diff(task._end, task._start, 'year') > 10) {
@@ -7017,8 +7018,13 @@
 
                   bar_wrapper.classList.add('active');
 
-                  x_on_start = e.offsetX;
-                  y_on_start = e.offsetY;
+                  var _getOffset = getOffset(e);
+
+                  var _getOffset2 = slicedToArray(_getOffset, 2);
+
+                  x_on_start = _getOffset2[0];
+                  y_on_start = _getOffset2[1];
+
 
                   parent_bar_id = bar_wrapper.getAttribute('data-id');
 
@@ -7057,8 +7063,12 @@
                   if (!action_in_progress()) return;
                   _this8.hide_popup();
 
-                  var dx = e.offsetX - x_on_start;
-                  var dy = e.offsetY - y_on_start;
+                  var _getOffset3 = getOffset(e),
+                      _getOffset4 = slicedToArray(_getOffset3, 2),
+                      offsetX = _getOffset4[0],
+                      offsetY = _getOffset4[1];
+
+                  var dx = offsetX - x_on_start;
 
                   if (_this8.options.is_draggable && _this8.options.is_sortable && is_dragging) {
                       var row = Math.floor((e.offsetY - _this8.options.header_height - 10) / (_this8.options.bar_height + _this8.options.padding));
@@ -7083,7 +7093,7 @@
 
                   bars.forEach(function (bar) {
                       var $bar = bar.$bar;
-                      $bar.finaldx = dx;
+                      $bar.finaldx = _this8.view_is('Day') ? _this8.get_snap_position(dx) : dx;
 
                       if (is_resizing_left) {
                           if (parent_bar_id === bar.task.id) {
@@ -7171,8 +7181,14 @@
 
               $.on(this.$svg, 'mousedown', '.handle.progress', function (e, handle) {
                   is_resizing = true;
-                  x_on_start = e.offsetX;
-                  y_on_start = e.offsetY;
+
+                  var _getOffset5 = getOffset(e);
+
+                  var _getOffset6 = slicedToArray(_getOffset5, 2);
+
+                  x_on_start = _getOffset6[0];
+                  y_on_start = _getOffset6[1];
+
 
                   var $bar_wrapper = $.closest('.bar-wrapper', handle);
                   var id = $bar_wrapper.getAttribute('data-id');
@@ -7189,8 +7205,13 @@
 
               $.on(this.$svg, 'mousemove', function (e) {
                   if (!is_resizing) return;
-                  var dx = e.offsetX - x_on_start;
-                  var dy = e.offsetY - y_on_start;
+
+                  var _getOffset7 = getOffset(e),
+                      _getOffset8 = slicedToArray(_getOffset7, 2),
+                      offsetX = _getOffset8[0],
+                      offsetY = _getOffset8[1];
+
+                  var dx = offsetX - x_on_start;
 
                   if (dx > $bar_progress.max_dx) {
                       dx = $bar_progress.max_dx;
@@ -7403,6 +7424,20 @@
 
   function generate_id(task) {
       return task.name + '_' + Math.random().toString(36).slice(2, 12);
+  }
+
+  function getOffset(_ref5) {
+      var currentTarget = _ref5.currentTarget,
+          clientX = _ref5.clientX,
+          clientY = _ref5.clientY;
+
+      var _currentTarget$getBou = currentTarget.getBoundingClientRect(),
+          left = _currentTarget$getBou.left,
+          top = _currentTarget$getBou.top;
+
+      var offsetX = clientX - left;
+      var offsetY = clientY - top;
+      return [offsetX, offsetY];
   }
 
   return Gantt;
