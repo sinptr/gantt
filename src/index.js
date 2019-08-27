@@ -269,8 +269,14 @@ export default class Gantt {
             this.gantt_start = date_utils.start_of(this.gantt_start, 'year');
             this.gantt_end = date_utils.add(this.gantt_end, 1, 'year');
         } else if (this.view_is('Year')) {
-            this.gantt_start = date_utils.add(this.gantt_start, -2, 'year');
-            this.gantt_end = date_utils.add(this.gantt_end, 12, 'year');
+            this.gantt_start = moment(this.gantt_start)
+                .startOf('year')
+                .add(-1, 'year')
+                .toDate();
+            this.gantt_end = moment(this.gantt_end)
+                .startOf('year')
+                .add(16, 'year')
+                .toDate();
         } else {
             this.gantt_start = date_utils.add(this.gantt_start, -1, 'day');
             this.gantt_end = date_utils.add(this.gantt_end, 1, 'year');
@@ -601,10 +607,6 @@ export default class Gantt {
             Month_upper:
                 date.getFullYear() !== last_date.getFullYear()
                     ? date_utils.format(date, 'YYYY', this.options.language)
-                    : '',
-            Year_upper:
-                date.getFullYear() !== last_date.getFullYear()
-                    ? date_utils.format(date, 'YYYY', this.options.language)
                     : ''
         };
 
@@ -915,9 +917,7 @@ export default class Gantt {
 
             bars.forEach(bar => {
                 const $bar = bar.$bar;
-                $bar.finaldx = this.view_is('Day')
-                    ? this.get_snap_position(dx)
-                    : dx;
+                $bar.finaldx = this.get_snap_position(dx);
 
                 if (is_resizing_left) {
                     if (parent_bar_id === bar.task.id) {
@@ -1079,7 +1079,16 @@ export default class Gantt {
             rem,
             position;
 
-        if (this.view_is('Week')) {
+        if (this.view_is('Year')) {
+            const days_in_year = 365;
+            rem = dx % (this.options.column_width / days_in_year);
+            position =
+                odx -
+                rem +
+                (rem < this.options.column_width / (days_in_year * 2)
+                    ? 0
+                    : this.options.column_width / days_in_year);
+        } else if (this.view_is('Week')) {
             rem = dx % (this.options.column_width / 7);
             position =
                 odx -

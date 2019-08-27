@@ -6413,8 +6413,8 @@
                   this.gantt_start = date_utils.start_of(this.gantt_start, 'year');
                   this.gantt_end = date_utils.add(this.gantt_end, 1, 'year');
               } else if (this.view_is('Year')) {
-                  this.gantt_start = date_utils.add(this.gantt_start, -2, 'year');
-                  this.gantt_end = date_utils.add(this.gantt_end, 12, 'year');
+                  this.gantt_start = moment(this.gantt_start).startOf('year').add(-1, 'year').toDate();
+                  this.gantt_end = moment(this.gantt_end).startOf('year').add(16, 'year').toDate();
               } else {
                   this.gantt_start = date_utils.add(this.gantt_start, -1, 'day');
                   this.gantt_end = date_utils.add(this.gantt_end, 1, 'year');
@@ -6766,8 +6766,7 @@
                   'Half Day_upper': date.getDate() !== last_date.getDate() ? date.getMonth() !== last_date.getMonth() ? date_utils.format(date, 'D MMM', this.options.language) : date_utils.format(date, 'D', this.options.language) : '',
                   Day_upper: date.getMonth() !== last_date.getMonth() ? date_utils.format(date, 'MMMM', this.options.language) : '',
                   Week_upper: date.getMonth() !== last_date.getMonth() ? date_utils.format(date, 'MMMM', this.options.language) : '',
-                  Month_upper: date.getFullYear() !== last_date.getFullYear() ? date_utils.format(date, 'YYYY', this.options.language) : '',
-                  Year_upper: date.getFullYear() !== last_date.getFullYear() ? date_utils.format(date, 'YYYY', this.options.language) : ''
+                  Month_upper: date.getFullYear() !== last_date.getFullYear() ? date_utils.format(date, 'YYYY', this.options.language) : ''
               };
 
               var base_pos = {
@@ -7093,7 +7092,7 @@
 
                   bars.forEach(function (bar) {
                       var $bar = bar.$bar;
-                      $bar.finaldx = _this8.view_is('Day') ? _this8.get_snap_position(dx) : dx;
+                      $bar.finaldx = _this8.get_snap_position(dx);
 
                       if (is_resizing_left) {
                           if (parent_bar_id === bar.task.id) {
@@ -7262,7 +7261,11 @@
                   rem = void 0,
                   position = void 0;
 
-              if (this.view_is('Week')) {
+              if (this.view_is('Year')) {
+                  var days_in_year = 365;
+                  rem = dx % (this.options.column_width / days_in_year);
+                  position = odx - rem + (rem < this.options.column_width / (days_in_year * 2) ? 0 : this.options.column_width / days_in_year);
+              } else if (this.view_is('Week')) {
                   rem = dx % (this.options.column_width / 7);
                   position = odx - rem + (rem < this.options.column_width / 14 ? 0 : this.options.column_width / 7);
               } else if (this.view_is('Month')) {
