@@ -5106,7 +5106,7 @@
                   class: 'handle-group',
                   append_to: this.group
               });
-              this.color = this.isValidColor(this.task.color) ? this.task.color : '';
+              this.color = this.task.color || '';
           }
       }, {
           key: 'prepare_helpers',
@@ -5126,14 +5126,6 @@
               SVGElement.prototype.getEndX = function () {
                   return this.getX() + this.getWidth();
               };
-          }
-      }, {
-          key: 'isValidColor',
-          value: function isValidColor() {
-              var color = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : '';
-
-              return (/(^#[0-9A-F]{6}$)|(^#[0-9A-F]{3}$)/i.test(color)
-              );
           }
       }, {
           key: 'draw',

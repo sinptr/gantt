@@ -55,7 +55,7 @@ export default class Bar {
             class: 'handle-group',
             append_to: this.group
         });
-        this.color = this.isValidColor(this.task.color) ? this.task.color : '';
+        this.color = this.task.color || '';
     }
 
     prepare_helpers() {
@@ -74,10 +74,6 @@ export default class Bar {
         SVGElement.prototype.getEndX = function() {
             return this.getX() + this.getWidth();
         };
-    }
-
-    isValidColor(color = '') {
-        return /(^#[0-9A-F]{6}$)|(^#[0-9A-F]{3}$)/i.test(color);
     }
 
     draw() {
