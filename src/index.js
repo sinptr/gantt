@@ -319,9 +319,20 @@ export default class Gantt {
     bind_events() {
         this.bind_grid_click();
         this.bind_resize();
+        this.bind_scroll();
         if (!this.options.read_only) {
             this.bind_bar_events();
         }
+    }
+
+    bind_scroll() {
+        $.on(this.$container, 'scroll', e => {
+            const { scrollTop } = e.currentTarget;
+            this.layers.date.setAttribute(
+                'transform',
+                `translate(0,${scrollTop})`
+            );
+        });
     }
 
     // TODO: finish chart resize
@@ -972,14 +983,6 @@ export default class Gantt {
             is_dragging = false;
             is_resizing_left = false;
             is_resizing_right = false;
-        });
-
-        $.on(this.$container, 'scroll', e => {
-            const { scrollTop } = e.currentTarget;
-            this.layers.date.setAttribute(
-                'transform',
-                `translate(0,${scrollTop})`
-            );
         });
 
         $.on(this.$svg, 'mouseup', e => {

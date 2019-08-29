@@ -6447,9 +6447,21 @@
           value: function bind_events() {
               this.bind_grid_click();
               this.bind_resize();
+              this.bind_scroll();
               if (!this.options.read_only) {
                   this.bind_bar_events();
               }
+          }
+      }, {
+          key: 'bind_scroll',
+          value: function bind_scroll() {
+              var _this2 = this;
+
+              $.on(this.$container, 'scroll', function (e) {
+                  var scrollTop = e.currentTarget.scrollTop;
+
+                  _this2.layers.date.setAttribute('transform', 'translate(0,' + scrollTop + ')');
+              });
           }
 
           // TODO: finish chart resize
@@ -6457,30 +6469,30 @@
       }, {
           key: 'bind_resize',
           value: function bind_resize() {
-              var _this2 = this;
+              var _this3 = this;
 
               var frame = null;
               this.$svg.addEventListener('wheel', function (e) {
                   // TODO: delete false then finish
-                  if (e.ctrlKey && _this2.options.view_mode === 'Day' && false) {
+                  if (e.ctrlKey && _this3.options.view_mode === 'Day' && false) {
                       e.preventDefault();
-                      _this2.options.column_width -= e.deltaY * 0.05;
-                      if (_this2.options.column_width < 16) {
-                          _this2.options.column_width = 16;
+                      _this3.options.column_width -= e.deltaY * 0.05;
+                      if (_this3.options.column_width < 16) {
+                          _this3.options.column_width = 16;
                       }
                       if (frame) {
                           cancelAnimationFrame(frame);
                           frame = null;
                       }
                       frame = requestAnimationFrame(function () {
-                          _this2.bars.forEach(function (bar) {
+                          _this3.bars.forEach(function (bar) {
                               bar.update_bar_position({
                                   x: bar.compute_x(),
                                   width: bar.compute_width()
                               });
                           });
-                          _this2.layers.date.querySelectorAll('.lower-text').forEach(function (date, i) {
-                              date.setAttribute('x', i * _this2.options.column_width + _this2.options.column_width / 2);
+                          _this3.layers.date.querySelectorAll('.lower-text').forEach(function (date, i) {
+                              date.setAttribute('x', i * _this3.options.column_width + _this3.options.column_width / 2);
                           });
                       });
                   }
@@ -6738,11 +6750,11 @@
       }, {
           key: 'get_dates_to_draw',
           value: function get_dates_to_draw() {
-              var _this3 = this;
+              var _this4 = this;
 
               var last_date = null;
               return this.dates.map(function (date, i) {
-                  var d = _this3.get_date_info(date, last_date, i);
+                  var d = _this4.get_date_info(date, last_date, i);
                   last_date = date;
                   return d;
               });
@@ -6804,18 +6816,18 @@
       }, {
           key: 'make_bars',
           value: function make_bars() {
-              var _this4 = this;
+              var _this5 = this;
 
               this.bars = this.tasks.map(function (task) {
-                  var bar = new Bar(_this4, task);
-                  _this4.layers.bar.appendChild(bar.group);
+                  var bar = new Bar(_this5, task);
+                  _this5.layers.bar.appendChild(bar.group);
                   return bar;
               });
           }
       }, {
           key: 'make_arrows',
           value: function make_arrows() {
-              var _this5 = this;
+              var _this6 = this;
 
               this.arrows = [];
               var _iteratorNormalCompletion5 = true;
@@ -6831,15 +6843,15 @@
                               task_id = _ref3[0],
                               type = _ref3[1];
 
-                          var dependency = _this5.get_task(task_id);
+                          var dependency = _this6.get_task(task_id);
                           if (!dependency) return;
-                          var arrow = new Arrow(_this5, _this5.bars[dependency._index], // from_task
-                          _this5.bars[task._index], // to_task
+                          var arrow = new Arrow(_this6, _this6.bars[dependency._index], // from_task
+                          _this6.bars[task._index], // to_task
                           type);
-                          _this5.layers.arrows.appendChild(arrow.element);
+                          _this6.layers.arrows.appendChild(arrow.element);
                           return arrow;
                       }).filter(Boolean); // filter falsy values
-                      _this5.arrows = _this5.arrows.concat(arrows);
+                      _this6.arrows = _this6.arrows.concat(arrows);
                   };
 
                   for (var _iterator5 = this.tasks[Symbol.iterator](), _step5; !(_iteratorNormalCompletion5 = (_step5 = _iterator5.next()).done); _iteratorNormalCompletion5 = true) {
@@ -6870,7 +6882,7 @@
       }, {
           key: 'map_arrows_on_bars',
           value: function map_arrows_on_bars() {
-              var _this6 = this;
+              var _this7 = this;
 
               var _iteratorNormalCompletion6 = true;
               var _didIteratorError6 = false;
@@ -6880,7 +6892,7 @@
                   var _loop2 = function _loop2() {
                       var bar = _step6.value;
 
-                      bar.arrows = _this6.arrows.filter(function (arrow) {
+                      bar.arrows = _this7.arrows.filter(function (arrow) {
                           return arrow.from_task.task.id === bar.task.id || arrow.to_task.task.id === bar.task.id;
                       });
                   };
@@ -6936,17 +6948,17 @@
       }, {
           key: 'bind_grid_click',
           value: function bind_grid_click() {
-              var _this7 = this;
+              var _this8 = this;
 
               $.on(this.$svg, this.options.popup_trigger, '.grid-row, .grid-header', function () {
-                  _this7.unselect_all();
-                  _this7.hide_popup();
+                  _this8.unselect_all();
+                  _this8.hide_popup();
               });
           }
       }, {
           key: 'bind_bar_events',
           value: function bind_bar_events() {
-              var _this8 = this;
+              var _this9 = this;
 
               var is_dragging = false;
               var is_connecting = false;
@@ -6967,19 +6979,19 @@
 
               $.on(this.$svg, 'mousedown', '.handle-group .circle', function (e, element) {
                   is_connecting = !is_connecting;
-                  _this8.hide_popup();
+                  _this9.hide_popup();
                   var types = enums.dependency.types;
 
                   var bar_wrapper = $.closest('.bar-wrapper', element);
                   var task_id = bar_wrapper.getAttribute('data-id');
-                  var bar = _this8.get_bar(task_id);
+                  var bar = _this9.get_bar(task_id);
                   if (is_connecting) {
                       connecting_bar = bar;
                       connecting_type = element.classList.contains('left') ? types.START_TO_START : types.END_TO_START;
                       element.classList.add('selected');
-                      _this8.$svg.querySelectorAll('.bar-wrapper').forEach(function (wrapper) {
+                      _this9.$svg.querySelectorAll('.bar-wrapper').forEach(function (wrapper) {
                           var id = wrapper.getAttribute('data-id');
-                          var can_add_dependency = _this8.can_add_dependency(connecting_bar.task, _this8.get_task(id));
+                          var can_add_dependency = _this9.can_add_dependency(connecting_bar.task, _this9.get_task(id));
                           wrapper.querySelectorAll('.circle').forEach(function (circle) {
                               var show_circle = can_add_dependency || circle.classList.contains('selected');
                               if (connecting_bar.task.id !== id) {
@@ -6993,12 +7005,12 @@
                       var _connecting_bar = connecting_bar,
                           connecting_task = _connecting_bar.task;
 
-                      _this8.$svg.querySelectorAll('.handle-group .circle').forEach(function (circle) {
+                      _this9.$svg.querySelectorAll('.handle-group .circle').forEach(function (circle) {
                           circle.classList.remove('disabled', 'active', 'selected');
                       });
 
-                      if (_this8.can_add_dependency(connecting_task, _task)) {
-                          _this8.add_dependency(connecting_task, _task, connecting_type);
+                      if (_this9.can_add_dependency(connecting_task, _task)) {
+                          _this9.add_dependency(connecting_task, _task, connecting_type);
                       }
                       connecting_bar = null;
                   }
@@ -7031,24 +7043,24 @@
                   ///
                   var ids = [parent_bar_id];
                   var allowType = is_resizing_left ? enums.dependency.types.START_TO_START : enums.dependency.types.END_TO_START;
-                  if (_this8.dependency_map.has(parent_bar_id)) {
+                  if (_this9.dependency_map.has(parent_bar_id)) {
                       if (is_resizing_left || is_resizing_right) {
-                          _this8.dependency_map.get(parent_bar_id).forEach(function (type, childTaskId) {
+                          _this9.dependency_map.get(parent_bar_id).forEach(function (type, childTaskId) {
                               if (type === allowType) {
-                                  ids = [].concat(toConsumableArray(ids), toConsumableArray(_this8.get_all_dependent_tasks(childTaskId)), [childTaskId]);
+                                  ids = [].concat(toConsumableArray(ids), toConsumableArray(_this9.get_all_dependent_tasks(childTaskId)), [childTaskId]);
                               }
                           });
                       } else {
-                          ids = [].concat(toConsumableArray(ids), toConsumableArray(_this8.get_all_dependent_tasks(parent_bar_id)));
+                          ids = [].concat(toConsumableArray(ids), toConsumableArray(_this9.get_all_dependent_tasks(parent_bar_id)));
                       }
                   }
                   ///
                   ids = [].concat(toConsumableArray(new Set(ids).values()));
                   bars = ids.map(function (id) {
-                      return _this8.get_bar(id);
+                      return _this9.get_bar(id);
                   });
 
-                  _this8.bar_being_dragged = parent_bar_id;
+                  _this9.bar_being_dragged = parent_bar_id;
 
                   bars.forEach(function (bar) {
                       var $bar = bar.$bar;
@@ -7061,7 +7073,7 @@
 
               $.on(this.$svg, 'mousemove', function (e) {
                   if (!action_in_progress()) return;
-                  _this8.hide_popup();
+                  _this9.hide_popup();
 
                   var _getOffset3 = getOffset(e),
                       _getOffset4 = slicedToArray(_getOffset3, 2),
@@ -7070,20 +7082,20 @@
 
                   var dx = offsetX - x_on_start;
 
-                  if (_this8.options.is_draggable && _this8.options.is_sortable && is_dragging) {
-                      var row = Math.floor((e.offsetY - _this8.options.header_height - 10) / (_this8.options.bar_height + _this8.options.padding));
-                      if (row >= 0 && row < _this8.tasks.length) {
-                          var _bar = _this8.get_bar(parent_bar_id);
+                  if (_this9.options.is_draggable && _this9.options.is_sortable && is_dragging) {
+                      var row = Math.floor((e.offsetY - _this9.options.header_height - 10) / (_this9.options.bar_height + _this9.options.padding));
+                      if (row >= 0 && row < _this9.tasks.length) {
+                          var _bar = _this9.get_bar(parent_bar_id);
                           var offset = row - _bar.task._index;
 
                           if (offset) {
                               new_position = _bar.task._index + offset;
-                              _this8.tasks.splice(new_position, 0, _this8.tasks.splice(_bar.task._index, 1)[0]);
+                              _this9.tasks.splice(new_position, 0, _this9.tasks.splice(_bar.task._index, 1)[0]);
 
-                              _this8.tasks.forEach(function (task, i) {
+                              _this9.tasks.forEach(function (task, i) {
                                   if (task._index !== i) {
                                       task._index = i;
-                                      var _bar2 = _this8.get_bar(task.id);
+                                      var _bar2 = _this9.get_bar(task.id);
                                       _bar2.update_bar_position({ y: _bar2.compute_y() });
                                   }
                               });
@@ -7093,7 +7105,7 @@
 
                   bars.forEach(function (bar) {
                       var $bar = bar.$bar;
-                      $bar.finaldx = _this8.get_snap_position(dx);
+                      $bar.finaldx = _this9.get_snap_position(dx);
 
                       if (is_resizing_left) {
                           if (parent_bar_id === bar.task.id) {
@@ -7118,7 +7130,7 @@
                                   x: $bar.ox + $bar.finaldx
                               });
                           }
-                      } else if (is_dragging && _this8.options.is_draggable) {
+                      } else if (is_dragging && _this9.options.is_draggable) {
                           bar.update_bar_position({
                               x: $bar.ox + $bar.finaldx
                           });
@@ -7138,19 +7150,13 @@
                   is_resizing_right = false;
               });
 
-              $.on(this.$container, 'scroll', function (e) {
-                  var scrollTop = e.currentTarget.scrollTop;
-
-                  _this8.layers.date.setAttribute('transform', 'translate(0,' + scrollTop + ')');
-              });
-
               $.on(this.$svg, 'mouseup', function (e) {
-                  if (_this8.bar_being_dragged) {
-                      _this8.bar_being_dragged = null;
+                  if (_this9.bar_being_dragged) {
+                      _this9.bar_being_dragged = null;
                       if (new_position !== null) {
-                          _this8.trigger_event('order_change', [parent_bar_id, new_position]);
+                          _this9.trigger_event('order_change', [parent_bar_id, new_position]);
                           new_position = null;
-                          _this8.get_bar(parent_bar_id).set_action_completed();
+                          _this9.get_bar(parent_bar_id).set_action_completed();
                       }
                       bars.forEach(function (bar) {
                           if (bar.task.id === parent_bar_id) {
@@ -7170,7 +7176,7 @@
       }, {
           key: 'bind_bar_progress',
           value: function bind_bar_progress() {
-              var _this9 = this;
+              var _this10 = this;
 
               var x_on_start = 0;
               var y_on_start = 0;
@@ -7192,7 +7198,7 @@
 
                   var $bar_wrapper = $.closest('.bar-wrapper', handle);
                   var id = $bar_wrapper.getAttribute('data-id');
-                  bar = _this9.get_bar(id);
+                  bar = _this10.get_bar(id);
 
                   $bar_progress = bar.$bar_progress;
                   $bar = bar.$bar;
@@ -7288,7 +7294,7 @@
       }, {
           key: 'view_is',
           value: function view_is(modes) {
-              var _this10 = this;
+              var _this11 = this;
 
               if (typeof modes === 'string') {
                   return this.options.view_mode === modes;
@@ -7296,7 +7302,7 @@
 
               if (Array.isArray(modes)) {
                   return modes.some(function (mode) {
-                      return _this10.options.view_mode === mode;
+                      return _this11.options.view_mode === mode;
                   });
               }
 
@@ -7376,7 +7382,7 @@
       }, {
           key: 'add_dependency',
           value: function add_dependency(task_from, task_to, type) {
-              var _this11 = this;
+              var _this12 = this;
 
               this.make_arrow(task_from, task_to, type);
               this.map_arrows_on_bar(this.get_bar(task_from.id));
@@ -7387,7 +7393,7 @@
               bar.update_bar_position({ x: bar.compute_x() });
               bar.date_changed();
               this.get_all_dependent_tasks(task_to.id).forEach(function (id) {
-                  var depBar = _this11.get_bar(id);
+                  var depBar = _this12.get_bar(id);
                   depBar.update_bar_position({ x: depBar.compute_x() });
                   depBar.date_changed();
               });
