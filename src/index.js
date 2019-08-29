@@ -107,7 +107,8 @@ export default class Gantt {
         this.tasks = tasks.map((task, i) => {
             // convert to Date objects
             task._start = this.calendar.placeDateInWorkingRange(
-                moment(task.start).startOf('day')
+                moment(task.start).startOf('day'),
+                true
             );
             task._end = this.calendar.placeDateInWorkingRange(
                 moment(task.end).endOf('day')

@@ -97,15 +97,15 @@ class Calendar {
     /**
      *
      * @param date {Date || moment.Moment}
+     * @param isStart {Boolean}
      * @return {Date}
      */
-    placeDateInWorkingRange(date) {
+    placeDateInWorkingRange(date, isStart = false) {
         const { workStartHour, workEndHour } = this;
         const workingDate = moment(this.getNextWorkingDay(date));
         const workStart = moment(workingDate)
             .startOf('day')
-            .hours(workStartHour)
-            .add(1, 'second');
+            .hours(workStartHour);
         const workEnd = moment(workingDate)
             .startOf('day')
             .hours(workEndHour)
@@ -117,6 +117,12 @@ class Calendar {
             )
         ) {
             return workingDate.toDate();
+        }
+
+        if (isStart && workingDate.isSameOrAfter(workEnd)) {
+            return this.getNextWorkingDay(
+                this.getBusinessDayStart(workingDate.add(1, 'day'))
+            );
         }
 
         return moment.min(workStart, workingDate) === workingDate

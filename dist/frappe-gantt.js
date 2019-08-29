@@ -5377,7 +5377,7 @@
               if (this.gantt.bar_being_dragged) return;
 
               var start_date = date_utils.format(this.task._start, 'MMM D', this.gantt.options.language);
-              var end_date = date_utils.format(date_utils.add(this.task._end, -1, 'second'), 'MMM D', this.gantt.options.language);
+              var end_date = date_utils.format(this.task._end, 'MMM D', this.gantt.options.language);
               var subtitle = start_date + ' - ' + end_date;
 
               this.gantt.show_popup({
@@ -5484,10 +5484,10 @@
               var calendar = this.gantt.calendar;
 
               if (resizing) {
-                  this.task.duration = calendar.computeTaskDuration(calendar.placeDateInWorkingRange(new_start_date), calendar.placeDateInWorkingRange(new_end_date));
+                  this.task.duration = calendar.computeTaskDuration(calendar.placeDateInWorkingRange(new_start_date, true), calendar.placeDateInWorkingRange(new_end_date));
                   new_end_date = calendar.placeDateInWorkingRange(new_end_date);
               }
-              new_start_date = calendar.placeDateInWorkingRange(new_start_date);
+              new_start_date = calendar.placeDateInWorkingRange(new_start_date, true);
               if (!resizing) {
                   new_end_date = calendar.computeTaskEndDate(new_start_date, this.task.duration);
               }
@@ -6048,20 +6048,26 @@
           /**
            *
            * @param date {Date || moment.Moment}
+           * @param isStart {Boolean}
            * @return {Date}
            */
 
       }, {
           key: 'placeDateInWorkingRange',
           value: function placeDateInWorkingRange(date) {
+              var isStart = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
               var workStartHour = this.workStartHour,
                   workEndHour = this.workEndHour;
 
               var workingDate = moment(this.getNextWorkingDay(date));
-              var workStart = moment(workingDate).startOf('day').hours(workStartHour).add(1, 'second');
+              var workStart = moment(workingDate).startOf('day').hours(workStartHour);
               var workEnd = moment(workingDate).startOf('day').hours(workEndHour).add(-1, 'second');
               if (workingDate.isBetween(moment(workStart).add(-1, 'second'), moment(workEnd))) {
                   return workingDate.toDate();
+              }
+
+              if (isStart && workingDate.isSameOrAfter(workEnd)) {
+                  return this.getNextWorkingDay(this.getBusinessDayStart(workingDate.add(1, 'day')));
               }
 
               return moment.min(workStart, workingDate) === workingDate ? workStart.toDate() : workEnd.toDate();
@@ -6225,7 +6231,7 @@
               // prepare tasks
               this.tasks = tasks.map(function (task, i) {
                   // convert to Date objects
-                  task._start = _this.calendar.placeDateInWorkingRange(moment(task.start).startOf('day'));
+                  task._start = _this.calendar.placeDateInWorkingRange(moment(task.start).startOf('day'), true);
                   task._end = _this.calendar.placeDateInWorkingRange(moment(task.end).endOf('day'));
                   task.duration = _this.calendar.computeTaskDuration(task._start, task._end);
 

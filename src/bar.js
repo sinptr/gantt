@@ -318,7 +318,7 @@ export default class Bar {
             this.gantt.options.language
         );
         const end_date = date_utils.format(
-            date_utils.add(this.task._end, -1, 'second'),
+            this.task._end,
             'MMM D',
             this.gantt.options.language
         );
@@ -409,12 +409,12 @@ export default class Bar {
         const { calendar } = this.gantt;
         if (resizing) {
             this.task.duration = calendar.computeTaskDuration(
-                calendar.placeDateInWorkingRange(new_start_date),
+                calendar.placeDateInWorkingRange(new_start_date, true),
                 calendar.placeDateInWorkingRange(new_end_date)
             );
             new_end_date = calendar.placeDateInWorkingRange(new_end_date);
         }
-        new_start_date = calendar.placeDateInWorkingRange(new_start_date);
+        new_start_date = calendar.placeDateInWorkingRange(new_start_date, true);
         if (!resizing) {
             new_end_date = calendar.computeTaskEndDate(
                 new_start_date,
