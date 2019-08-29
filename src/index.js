@@ -269,6 +269,14 @@ export default class Gantt {
         } else if (this.view_is('Month')) {
             this.gantt_start = date_utils.start_of(this.gantt_start, 'year');
             this.gantt_end = date_utils.add(this.gantt_end, 1, 'year');
+        } else if (this.view_is('Week')) {
+            this.gantt_start = moment(this.gantt_start)
+                .add(-1, 'day')
+                .toDate();
+            this.gantt_end = moment(this.gantt_end)
+                .add(1, 'year')
+                .startOf('week')
+                .toDate();
         } else if (this.view_is('Year')) {
             this.gantt_start = moment(this.gantt_start)
                 .startOf('year')
@@ -624,7 +632,7 @@ export default class Gantt {
             'Half Day_upper': 0,
             Day_lower: this.options.column_width / 2,
             Day_upper: this.options.column_width * 30 / 2,
-            Week_lower: 0,
+            Week_lower: i === 0 ? -10 : 0, // hide first value
             Week_upper: this.options.column_width * 4 / 2,
             Month_lower: this.options.column_width / 2,
             Month_upper: this.options.column_width * 12 / 2,
