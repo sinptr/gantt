@@ -332,7 +332,7 @@ export default class Bar {
         const bar = this.$bar;
         if (x) {
             // get all x values of parent task
-            const xs = Array.from(this.task.dependencies, ([dep, type]) => {
+            const xs = Array.from(this.task.dependencies, ([dep]) => {
                 const bar = this.gantt.get_bar(dep);
                 return bar.x;
             });
@@ -400,15 +400,56 @@ export default class Bar {
         return Math.max(width, this.min_width);
     }
 
-    date_changed(resizing = false) {
+    update_deps(excludedTaskIds = new Set()) {
+        const { dependencies = [] } = this.task;
+        const newDeps = [...dependencies].map(([id, info]) => {
+            if (excludedTaskIds.has(id)) {
+                return [id, info];
+            }
+            const parent = this.gantt.get_task(id);
+            const { type } = info;
+            const offset = this.gantt.getTaskOffset(parent, this.task, type);
+            return [id, { ...info, offset }];
+        });
+        this.task.dependencies = new Map(newDeps);
+    }
+
+    date_changed(excludedTaskIds, resizing = false, isSideEffect = false) {
         let { new_start_date, new_end_date } = this.compute_start_end_date();
         const { calendar } = this.gantt;
+
         if (resizing) {
             this.task.duration = calendar.computeTaskDuration(
                 calendar.placeDateInWorkingRange(new_start_date, true),
                 calendar.placeDateInWorkingRange(new_end_date)
             );
             new_end_date = calendar.placeDateInWorkingRange(new_end_date);
+        }
+        if (isSideEffect) {
+            const nonEmptyOffsets = [
+                ...this.task.dependencies.entries()
+            ].filter(([, { offset }]) => (Boolean(offset) || offset === 0));
+            if (nonEmptyOffsets.length) {
+                const [[parentId, { type, offset }]] = nonEmptyOffsets;
+                const parent = this.gantt.get_task(parentId);
+                const parentStart = parent._start;
+                const parentEnd = parent._end;
+                new_start_date = this.gantt.calendar.addWithWeekendsSkip(
+                    this.gantt.getStartDateForOffset(parentStart, parentEnd, type),
+                    offset
+                );
+
+                if (new_start_date < parentStart) {
+                    this.task.dependencies.set(
+                        parentId,
+                        {
+                            type,
+                            offset: this.gantt.getTaskOffset(parent, parent, type),
+                        }
+                    );
+                    new_start_date = parentStart;
+                }
+            }
         }
         new_start_date = calendar.placeDateInWorkingRange(new_start_date, true);
         if (!resizing) {
@@ -434,6 +475,8 @@ export default class Bar {
             x: this.compute_x(),
             width: this.compute_width()
         });
+
+        this.update_deps(excludedTaskIds);
 
         if (changed) {
             this.gantt.trigger_event('date_change', [

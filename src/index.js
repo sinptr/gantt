@@ -155,6 +155,14 @@ export default class Gantt {
 
             // dependencies
             try {
+                if (Array.isArray(task.dependencies)) {
+                    task.dependencies = task.dependencies.map(([id, info]) => {
+                        if (typeof info === 'object') {
+                            return [id, info];
+                        }
+                        return [id, { type: info }];
+                    });
+                }
                 task.dependencies = new Map(task.dependencies);
             } catch (e) {
                 // TODO: write meaningful exception
@@ -175,9 +183,18 @@ export default class Gantt {
     setup_dependencies() {
         const dependencyMap = new Map();
         this.tasks.forEach(({ id, dependencies }) => {
-            dependencies.forEach((type, taskId) => {
+            dependencies.forEach((info, taskId) => {
                 const map = dependencyMap.get(taskId) || new Map();
-                map.set(id, type);
+                let { offset } = info;
+                if (!offset && offset !== 0) {
+                    offset = this.getTaskOffset(
+                        this.get_task(taskId),
+                        this.get_task(id),
+                        info.type
+                    );
+                    dependencies.set(taskId, { ...info, offset });
+                }
+                map.set(id, { ...info, offset });
                 dependencyMap.set(taskId, map);
             });
         });
@@ -673,18 +690,21 @@ export default class Gantt {
     make_arrows() {
         this.arrows = [];
         for (let task of this.tasks) {
-            const arrows = Array.from(task.dependencies, ([task_id, type]) => {
-                const dependency = this.get_task(task_id);
-                if (!dependency) return;
-                const arrow = new Arrow(
-                    this,
-                    this.bars[dependency._index], // from_task
-                    this.bars[task._index], // to_task
-                    type
-                );
-                this.layers.arrows.appendChild(arrow.element);
-                return arrow;
-            }).filter(Boolean); // filter falsy values
+            const arrows = Array.from(
+                task.dependencies,
+                ([task_id, { type }]) => {
+                    const dependency = this.get_task(task_id);
+                    if (!dependency) return;
+                    const arrow = new Arrow(
+                        this,
+                        this.bars[dependency._index], // from_task
+                        this.bars[task._index], // to_task
+                        type
+                    );
+                    this.layers.arrows.appendChild(arrow.element);
+                    return arrow;
+                }
+            ).filter(Boolean); // filter falsy values
             this.arrows = this.arrows.concat(arrows);
         }
     }
@@ -862,14 +882,12 @@ export default class Gantt {
                 if (is_resizing_left || is_resizing_right) {
                     this.dependency_map
                         .get(parent_bar_id)
-                        .forEach((type, childTaskId) => {
+                        .forEach(({ type }, childTaskId) => {
                             if (type === allowType) {
                                 ids = [
                                     ...ids,
-                                    ...this.get_all_dependent_tasks(
-                                        childTaskId
-                                    ),
-                                    childTaskId
+                                    childTaskId,
+                                    ...this.get_all_dependent_tasks(childTaskId)
                                 ];
                             }
                         });
@@ -996,11 +1014,20 @@ export default class Gantt {
                     new_position = null;
                     this.get_bar(parent_bar_id).set_action_completed();
                 }
+                const dependentTasks = this.get_all_dependent_tasks(
+                    parent_bar_id
+                );
+                dependentTasks.add(parent_bar_id);
+
                 bars.forEach(bar => {
                     if (bar.task.id === parent_bar_id) {
-                        bar.date_changed(is_resizing_right || is_resizing_left);
+
+                        bar.date_changed(
+                            undefined,
+                            is_resizing_right || is_resizing_left
+                        );
                     } else {
-                        bar.date_changed();
+                        bar.date_changed(dependentTasks, false, true);
                     }
                     if (bar.$bar.finaldx) {
                         bar.set_action_completed();
@@ -1217,24 +1244,45 @@ export default class Gantt {
         this.make_arrow(task_from, task_to, type);
         this.map_arrows_on_bar(this.get_bar(task_from.id));
         this.map_arrows_on_bar(this.get_bar(task_to.id));
-        task_to.dependencies.set(task_from.id, type);
-        this.setup_dependencies();
         const bar = this.get_bar(task_to.id);
         bar.update_bar_position({ x: bar.compute_x() });
         bar.date_changed();
-        this.get_all_dependent_tasks(task_to.id).forEach(id => {
+
+        const offset = this.getTaskOffset(task_from, task_to, type);
+
+        task_to.dependencies.set(task_from.id, { type, offset });
+        this.setup_dependencies();
+        const dependentTasks = this.get_all_dependent_tasks(task_to.id);
+        dependentTasks.add(task_to.id);
+
+        dependentTasks.forEach(id => {
             const depBar = this.get_bar(id);
             depBar.update_bar_position({ x: depBar.compute_x() });
-            depBar.date_changed();
+            depBar.date_changed(dependentTasks, false, true);
         });
         this.trigger_event('dependency_change', [task_from, task_to, type]);
     }
 
-    delete_dependency(task_from, task_to, type) {
+    delete_dependency(task_from, task_to, info) {
         task_to.dependencies.delete(task_from.id);
         this.map_arrows_on_bars();
         this.setup_dependencies();
-        this.trigger_event('dependency_change', [task_from, task_to, type]);
+        this.trigger_event('dependency_change', [task_from, task_to, info]);
+    }
+
+    getStartDateForOffset(start, end, type) {
+        return type === Enums.dependency.types.START_TO_START
+            ? start
+            : end;
+    }
+
+    getTaskOffset(taskFrom, taskTo, type) {
+        const offset = this.calendar.getBusinessHoursRange(
+            this.getStartDateForOffset(taskFrom._start, taskFrom._end, type),
+            taskTo._start
+        );
+
+        return offset;
     }
 
     getTasks() {

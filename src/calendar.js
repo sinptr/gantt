@@ -154,6 +154,11 @@ class Calendar {
             .hours(workEndHour);
     }
 
+    getWorkingHours() {
+        const { workStartHour, workEndHour } = this;
+        return workEndHour - workStartHour;
+    }
+
     computeTaskEndDate(startDate, duration) {
         const { workStartHour, workEndHour } = this;
         const workingHours = workEndHour - workStartHour;
@@ -185,6 +190,38 @@ class Calendar {
             }
         }
         return this.placeDateInWorkingRange(endDate.toDate());
+    }
+
+    getBusinessHoursRange(start, end) {
+        const holidaysNum = this.holidaysNum(start, end);
+        const standardRange = moment(end).diff(moment(start), 'hour', true);
+        const range = standardRange - holidaysNum * 24;
+        return range;
+    }
+
+    addWithWeekendsSkip(start, hours) {
+        const s = moment(start);
+        const sign = Math.sign(hours);
+        const workingHours = 24;
+        let hoursToAdd = Math.abs(hours);
+        // skip holidays if start date is holiday
+        while (this.isHoliday(s)) {
+            s.add(sign, 'day');
+        }
+        while (hoursToAdd) {
+            if (hoursToAdd < workingHours) {
+                s.add(sign * hoursToAdd, 'hour');
+                hoursToAdd = 0;
+            } else {
+                s.add(sign, 'day');
+                hoursToAdd -= workingHours;
+            }
+            // skip holidays
+            while (this.isHoliday(s)) {
+                s.add(sign, 'day');
+            }
+        }
+        return s.toDate();
     }
 }
 
