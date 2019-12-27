@@ -428,7 +428,7 @@ export default class Bar {
         if (isSideEffect) {
             const nonEmptyOffsets = [
                 ...this.task.dependencies.entries()
-            ].filter(([, { offset }]) => (Boolean(offset) || offset === 0));
+            ].filter(([id, { offset }]) => excludedTaskIds.has(id) && (Boolean(offset) || offset === 0));
             if (nonEmptyOffsets.length) {
                 const [[parentId, { type, offset }]] = nonEmptyOffsets;
                 const parent = this.gantt.get_task(parentId);

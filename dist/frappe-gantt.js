@@ -5595,9 +5595,10 @@
         if (isSideEffect) {
           var nonEmptyOffsets = _toConsumableArray(this.task.dependencies.entries()).filter(function (_ref7) {
             var _ref8 = _slicedToArray(_ref7, 2),
+                id = _ref8[0],
                 offset = _ref8[1].offset;
 
-            return Boolean(offset) || offset === 0;
+            return excludedTaskIds.has(id) && (Boolean(offset) || offset === 0);
           });
 
           if (nonEmptyOffsets.length) {
