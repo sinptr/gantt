@@ -1014,10 +1014,9 @@ export default class Gantt {
                     new_position = null;
                     this.get_bar(parent_bar_id).set_action_completed();
                 }
-                const dependentTasks = this.get_all_dependent_tasks(
+                const dependentTasks = new Set([parent_bar_id, ...this.get_all_dependent_tasks(
                     parent_bar_id
-                );
-                dependentTasks.add(parent_bar_id);
+                )]);
 
                 bars.forEach(bar => {
                     if (bar.task.id === parent_bar_id) {

@@ -426,11 +426,14 @@ export default class Bar {
             new_end_date = calendar.placeDateInWorkingRange(new_end_date);
         }
         if (isSideEffect) {
-            const nonEmptyOffsets = [
-                ...this.task.dependencies.entries()
-            ].filter(([id, { offset }]) => excludedTaskIds.has(id) && (Boolean(offset) || offset === 0));
-            if (nonEmptyOffsets.length) {
-                const [[parentId, { type, offset }]] = nonEmptyOffsets;
+            const parentIds = [...excludedTaskIds.values()]
+                .filter((id) => this.task.dependencies.has(id));
+            const [parentId] = parentIds.filter(id => {
+                const { offset }  = this.task.dependencies.get(id);
+                return (Boolean(offset) || offset === 0);
+            });
+            if (parentId) {
+                const { type, offset } = this.task.dependencies.get(parentId);
                 const parent = this.gantt.get_task(parentId);
                 const parentStart = parent._start;
                 const parentEnd = parent._end;

@@ -38,28 +38,79 @@
 
 		var tasks = [
 			{
-				start: '2018-10-01',
-				end: '2018-10-05',
-				name: 'Deploy',
-				id: "Task_4",
-				progress: 0,
-				// dependencies: [{task_id: 'Task_2', type: ''}]
+				dependencies: [
+					[
+						'3',
+						{
+							type: 0,
+							offset: 24.00027777777778
+						}
+					],
+					[
+						'2',
+						{
+							type: 1,
+							offset: 24
+						}
+					]
+				],
+				_id: '5e1714f946fd1b7e82b1ec34',
+				id: '1',
+				name: '1',
+				start: '2020-01-20T21:00:00.000Z',
+				end: '2020-01-27T20:59:59.000Z',
+				duration: 39.99972222222222
 			},
 			{
-				start: '2018-10-08',
-				end: '2018-10-12',
-				name: 'Go Live!',
-				id: "Task_5",
-				progress: 0,
-				dependencies: [['Task_4', { type: Enums.dependency.types.END_TO_START }], ['Task_6', { type: Enums.dependency.types.START_TO_START }]],
+				dependencies: [
+					[
+						'3',
+						{
+							type: 1,
+							offset: 120
+						}
+					],
+					[
+						'4',
+						{
+							type: 0,
+							offset: 96.00027777777777
+						}
+					]
+				],
+				_id: '5e1714f946fd1b7e82b1ec33',
+				id: '2',
+				name: '2',
+				start: '2020-01-19T21:00:00.000Z',
+				end: '2020-01-24T20:59:59.000Z',
+				duration: 39.99972222222222
 			},
 			{
-				start: '2018-10-08',
-				end: '2018-10-12',
-				name: 'Header Stick!',
-				id: "Task_6",
-				progress: 0,
+				dependencies: [
+					[
+						'4',
+						{
+							type: 1,
+							offset: 48
+						}
+					]
+				],
+				_id: '5e1714f946fd1b7e82b1ec32',
+				id: '3',
+				name: '3',
+				start: '2020-01-12T21:00:00.000Z',
+				end: '2020-01-17T20:59:59.000Z',
+				duration: 39.99972222222222
 			},
+			{
+				dependencies: [],
+				_id: '5e1714f946fd1b7e82b1ec31',
+				id: '4',
+				name: '4',
+				start: '2020-01-08T21:00:00.000Z',
+				end: '2020-01-13T20:59:59.000Z',
+				duration: 23.999722222222218
+			}
 		];
 		var gantt_chart = new Gantt(".gantt-target", tasks, {
 			bar_height: 20,

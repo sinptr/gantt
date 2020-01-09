@@ -5578,6 +5578,8 @@
     }, {
       key: "date_changed",
       value: function date_changed(excludedTaskIds) {
+        var _this5 = this;
+
         var resizing = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
         var isSideEffect = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : false;
 
@@ -5593,21 +5595,23 @@
         }
 
         if (isSideEffect) {
-          var nonEmptyOffsets = _toConsumableArray(this.task.dependencies.entries()).filter(function (_ref7) {
-            var _ref8 = _slicedToArray(_ref7, 2),
-                id = _ref8[0],
-                offset = _ref8[1].offset;
-
-            return excludedTaskIds.has(id) && (Boolean(offset) || offset === 0);
+          var parentIds = _toConsumableArray(excludedTaskIds.values()).filter(function (id) {
+            return _this5.task.dependencies.has(id);
           });
 
-          if (nonEmptyOffsets.length) {
-            var _nonEmptyOffsets = _slicedToArray(nonEmptyOffsets, 1),
-                _nonEmptyOffsets$ = _slicedToArray(_nonEmptyOffsets[0], 2),
-                parentId = _nonEmptyOffsets$[0],
-                _nonEmptyOffsets$$ = _nonEmptyOffsets$[1],
-                type = _nonEmptyOffsets$$.type,
-                offset = _nonEmptyOffsets$$.offset;
+          var _parentIds$filter = parentIds.filter(function (id) {
+            var _this5$task$dependenc = _this5.task.dependencies.get(id),
+                offset = _this5$task$dependenc.offset;
+
+            return Boolean(offset) || offset === 0;
+          }),
+              _parentIds$filter2 = _slicedToArray(_parentIds$filter, 1),
+              parentId = _parentIds$filter2[0];
+
+          if (parentId) {
+            var _this$task$dependenci2 = this.task.dependencies.get(parentId),
+                type = _this$task$dependenci2.type,
+                offset = _this$task$dependenci2.offset;
 
             var parent = this.gantt.get_task(parentId);
             var parentStart = parent._start;
@@ -5660,11 +5664,11 @@
     }, {
       key: "set_action_completed",
       value: function set_action_completed() {
-        var _this5 = this;
+        var _this6 = this;
 
         this.action_completed = true;
         setTimeout(function () {
-          return _this5.action_completed = false;
+          return _this6.action_completed = false;
         }, 1000);
       }
     }, {
@@ -7378,9 +7382,7 @@
               _this10.get_bar(parent_bar_id).set_action_completed();
             }
 
-            var dependentTasks = _this10.get_all_dependent_tasks(parent_bar_id);
-
-            dependentTasks.add(parent_bar_id);
+            var dependentTasks = new Set([parent_bar_id].concat(_toConsumableArray(_this10.get_all_dependent_tasks(parent_bar_id))));
             bars.forEach(function (bar) {
               if (bar.task.id === parent_bar_id) {
                 bar.date_changed(undefined, is_resizing_right || is_resizing_left);
