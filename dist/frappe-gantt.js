@@ -6282,10 +6282,13 @@
       }
     }, {
       key: "getBusinessHoursRange",
-      value: function getBusinessHoursRange(start, end) {
+      value: function getBusinessHoursRange(startDate, endDate) {
+        var sign = Math.sign(endDate - startDate);
+        var start = moment(Math.min(startDate, endDate));
+        var end = moment(Math.max(startDate, endDate));
         var holidaysNum = this.holidaysNum(start, end);
-        var standardRange = moment(end).diff(moment(start), 'hour', true);
-        var range = standardRange - holidaysNum * 24;
+        var standardRange = end.diff(start, 'hour', true);
+        var range = sign * (standardRange - holidaysNum * 24);
         return range;
       }
     }, {

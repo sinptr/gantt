@@ -192,10 +192,13 @@ class Calendar {
         return this.placeDateInWorkingRange(endDate.toDate());
     }
 
-    getBusinessHoursRange(start, end) {
+    getBusinessHoursRange(startDate, endDate) {
+        const sign = Math.sign(endDate - startDate);
+        const start = moment(Math.min(startDate, endDate));
+        const end = moment(Math.max(startDate, endDate));
         const holidaysNum = this.holidaysNum(start, end);
-        const standardRange = moment(end).diff(moment(start), 'hour', true);
-        const range = standardRange - holidaysNum * 24;
+        const standardRange = end.diff(start, 'hour', true);
+        const range = sign * (standardRange - holidaysNum * 24);
         return range;
     }
 
