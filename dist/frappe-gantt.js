@@ -8059,6 +8059,7 @@
               parentId = _ref10.parentId;
           var start = _start;
           var end = _end;
+          var _duration = duration;
 
           if (_this14.childTasksMap.has(id)) {
             var _this14$getTasksEdgeD = _this14.getTasksEdgeDates(_this14.childTasksMap.get(id));
@@ -8067,6 +8068,7 @@
 
             start = _this14$getTasksEdgeD2[0];
             end = _this14$getTasksEdgeD2[1];
+            _duration = _this14.calendar.computeTaskDuration(start, end);
           }
 
           return {
@@ -8074,7 +8076,7 @@
             name: name,
             start: start,
             end: end,
-            duration: duration,
+            duration: _duration,
             dependencies: _toConsumableArray(dependencies),
             parentId: parentId
           };

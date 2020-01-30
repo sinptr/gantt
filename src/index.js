@@ -1316,15 +1316,17 @@ export default class Gantt {
             }) => {
                 let start = _start;
                 let end = _end;
+                let _duration = duration;
                 if (this.childTasksMap.has(id)) {
                     [start, end] = this.getTasksEdgeDates(this.childTasksMap.get(id));
+                    _duration = this.calendar.computeTaskDuration(start, end);
                 }
                 return {
                     id,
                     name,
                     start,
                     end,
-                    duration,
+                    duration: _duration,
                     dependencies: [...dependencies],
                     parentId,
                 }
