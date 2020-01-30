@@ -207,6 +207,8 @@ $circle-selected: #D1FAFF;
 		padding: 0;
 		color: #959da5;
 		border-radius: 3px;
+		min-width: 200px;
+		max-width: 400px;
 
 		.title {
 			border-bottom: 3px solid $blue;
