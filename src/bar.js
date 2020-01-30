@@ -1,7 +1,8 @@
 import date_utils from './date_utils';
-import Enums from './enums';
 import { $, createSVG, animateSVG } from './svg_utils';
 import moment from 'moment';
+
+const event = new Event('child_task_update');
 
 export default class Bar {
     constructor(gantt, task) {
@@ -13,7 +14,7 @@ export default class Bar {
 
     get min_width() {
         const { gantt } = this;
-        return gantt.view_is('Day') ? gantt.options.column_width - 1e-3 : 4;
+        return gantt.view_is('Day') ? gantt.options.column_width - 1e-3 : 20;
     }
 
     set_defaults(gantt, task) {
@@ -330,6 +331,7 @@ export default class Bar {
 
     update_bar_position({ x = null, y = null, width = null }) {
         const bar = this.$bar;
+        const { x: oldX, width: oldWidth } = this;
         if (x) {
             // get all x values of parent task
             const xs = Array.from(this.task.dependencies, ([dep]) => {
@@ -349,6 +351,7 @@ export default class Bar {
         if (width) {
             const { min_width } = this;
             this.update_attr(bar, 'width', Math.max(width, min_width));
+            this.width = Math.max(width, min_width);
         }
         this.update_label_position();
 
@@ -356,6 +359,10 @@ export default class Bar {
 
         this.update_progressbar_position();
         this.update_arrow_position();
+
+        if (this.x !== oldX || this.width !== oldWidth) {
+            this.gantt.$svg.dispatchEvent(event);
+        }
     }
 
     update_label_position_on_horizontal_scroll({ x, sx }) {

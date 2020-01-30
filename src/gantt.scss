@@ -171,7 +171,7 @@ $circle-selected: #D1FAFF;
 		}
 	}
 
-	.bar-group {
+	.bar-group, .parent-bar__group {
 		&:focus {
 			outline: none;
 		}
@@ -226,4 +226,16 @@ $circle-selected: #D1FAFF;
 			border-top-color: rgba(0, 0, 0, 0.8);
 		}
 	}
+}
+
+.parent-bar__wrapper {
+	cursor: pointer;
+}
+
+.parent-task__info {
+	padding-left: 16px;
+}
+
+.sub-task__info {
+	margin-bottom: 4px;
 }

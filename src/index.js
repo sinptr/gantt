@@ -8,6 +8,7 @@ import Calendar from './calendar';
 
 import './gantt.scss';
 import moment from 'moment';
+import ParentBar from './ParentBar';
 
 export default class Gantt {
     constructor(wrapper, tasks, options) {
@@ -104,6 +105,7 @@ export default class Gantt {
     setup_tasks(tasks) {
         tasks = JSON.parse(JSON.stringify(tasks));
         // prepare tasks
+        this.childTasksMap = new Map();
         this.tasks = tasks.map((task, i) => {
             // convert to Date objects
             task._start = this.calendar.placeDateInWorkingRange(
@@ -151,6 +153,11 @@ export default class Gantt {
             // invalid flag
             if (!task.start || !task.end) {
                 task.invalid = true;
+            }
+
+            if (task.parentId) {
+                const children = this.childTasksMap.get(task.parentId) || [];
+                this.childTasksMap.set(task.parentId, [...children, task]);
             }
 
             // dependencies
@@ -681,7 +688,7 @@ export default class Gantt {
 
     make_bars() {
         this.bars = this.tasks.map(task => {
-            const bar = new Bar(this, task);
+            const bar = this.childTasksMap.has(task.id) ? new ParentBar(this, task) : new Bar(this, task);
             this.layers.bar.appendChild(bar.group);
             return bar;
         });
@@ -1284,23 +1291,44 @@ export default class Gantt {
         return offset;
     }
 
+    getTasksEdgeDates(tasks) {
+        return tasks
+            .reduce(
+                ([prevStart, prevEnd], { _start, _end }) => [
+                    Math.min(prevStart, _start),
+                    Math.max(prevEnd, _end),
+                ],
+                [Infinity, -Infinity],
+            )
+            .map(timestamp => new Date(timestamp));
+    }
+
     getTasks() {
         return this.tasks.map(
             ({
                 id,
                 name,
-                _start: start,
-                _end: end,
+                _start,
+                _end,
                 duration,
-                dependencies
-            }) => ({
-                id,
-                name,
-                start,
-                end,
-                duration,
-                dependencies: [...dependencies]
-            })
+                dependencies,
+                parentId,
+            }) => {
+                let start = _start;
+                let end = _end;
+                if (this.childTasksMap.has(id)) {
+                    [start, end] = this.getTasksEdgeDates(this.childTasksMap.get(id));
+                }
+                return {
+                    id,
+                    name,
+                    start,
+                    end,
+                    duration,
+                    dependencies: [...dependencies],
+                    parentId,
+                }
+            }
         );
     }
 }

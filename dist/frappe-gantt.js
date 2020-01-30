@@ -518,15 +518,6 @@
     element.setAttribute(attr, value);
   };
 
-  var enums = {
-    dependency: {
-      types: {
-        END_TO_START: 0,
-        START_TO_START: 1
-      }
-    }
-  };
-
   var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
   function commonjsRequire () {
@@ -5137,6 +5128,8 @@
   })));
   });
 
+  var event = new Event('child_task_update');
+
   var Bar =
   /*#__PURE__*/
   function () {
@@ -5470,6 +5463,8 @@
             _ref$width = _ref.width,
             width = _ref$width === void 0 ? null : _ref$width;
         var bar = this.$bar;
+        var oldX = this.x,
+            oldWidth = this.width;
 
         if (x) {
           // get all x values of parent task
@@ -5498,12 +5493,17 @@
         if (width) {
           var min_width = this.min_width;
           this.update_attr(bar, 'width', Math.max(width, min_width));
+          this.width = Math.max(width, min_width);
         }
 
         this.update_label_position();
         this.update_handle_position();
         this.update_progressbar_position();
         this.update_arrow_position();
+
+        if (this.x !== oldX || this.width !== oldWidth) {
+          this.gantt.$svg.dispatchEvent(event);
+        }
       }
     }, {
       key: "update_label_position_on_horizontal_scroll",
@@ -5842,12 +5842,21 @@
       key: "min_width",
       get: function get() {
         var gantt = this.gantt;
-        return gantt.view_is('Day') ? gantt.options.column_width - 1e-3 : 4;
+        return gantt.view_is('Day') ? gantt.options.column_width - 1e-3 : 20;
       }
     }]);
 
     return Bar;
   }();
+
+  var enums = {
+    dependency: {
+      types: {
+        END_TO_START: 0,
+        START_TO_START: 1
+      }
+    }
+  };
 
   var Arrow =
   /*#__PURE__*/
@@ -6329,6 +6338,371 @@
     return Calendar;
   }();
 
+  var ParentBar =
+  /*#__PURE__*/
+  function () {
+    function ParentBar(gantt, task) {
+      _classCallCheck(this, ParentBar);
+
+      this.set_defaults(gantt, task);
+      this.prepare();
+      this.draw();
+      this.bind();
+    }
+
+    _createClass(ParentBar, [{
+      key: "set_defaults",
+      value: function set_defaults(gantt, task) {
+        this.action_completed = false;
+        this.gantt = gantt;
+        this.children = gantt.childTasksMap.get(task.id);
+
+        var _this$compute_start_e = this.compute_start_end_date(),
+            _this$compute_start_e2 = _slicedToArray(_this$compute_start_e, 2),
+            start = _this$compute_start_e2[0],
+            end = _this$compute_start_e2[1];
+
+        task._start = start;
+        task._end = end;
+        this.task = task;
+      }
+    }, {
+      key: "prepare",
+      value: function prepare() {
+        this.prepare_values();
+        this.prepare_helpers();
+      }
+    }, {
+      key: "prepare_values",
+      value: function prepare_values() {
+        this.invalid = this.task.invalid;
+        this.height = this.gantt.options.bar_height;
+        this.image_size = this.gantt.options.bar_height - 5;
+        this.x = this.compute_x();
+        this.y = this.compute_y();
+        this.corner_radius = this.gantt.options.bar_corner_radius;
+        this.duration = date_utils.diff(this.task._end, this.task._start, 'hour') / this.gantt.options.step;
+        this.width = this.compute_width();
+        this.progress_width = this.gantt.options.column_width * this.duration * (this.task.progress / 100) || 0;
+        this.group = createSVG('g', {
+          "class": 'parent-bar__wrapper ' + (this.task.custom_class || ''),
+          'data-id': this.task.id,
+          transform: "translate(".concat(this.x, ", ").concat(this.y, ")")
+        });
+        this.bar_group = createSVG('g', {
+          "class": 'parent-bar__group',
+          append_to: this.group
+        });
+        this.color = this.task.color || '';
+      }
+    }, {
+      key: "prepare_helpers",
+      value: function prepare_helpers() {
+        SVGElement.prototype.getX = function () {
+          return +this.getAttribute('x');
+        };
+
+        SVGElement.prototype.getY = function () {
+          return +this.getAttribute('y');
+        };
+
+        SVGElement.prototype.getWidth = function () {
+          return +this.getAttribute('width');
+        };
+
+        SVGElement.prototype.getHeight = function () {
+          return +this.getAttribute('height');
+        };
+
+        SVGElement.prototype.getEndX = function () {
+          return this.getX() + this.getWidth();
+        };
+      }
+    }, {
+      key: "draw",
+      value: function draw() {
+        this.draw_bar();
+        this.draw_label();
+      }
+    }, {
+      key: "getPolygonPoints",
+      value: function getPolygonPoints() {
+        var polygonPoints = [[0, 0], [this.width, 0], [this.width, this.height], [this.width - 10, this.height / 3], [10, this.height / 3], [0, this.height]];
+        return polygonPoints.map(function (point) {
+          return point.join(' ');
+        }).join(',');
+      }
+    }, {
+      key: "draw_bar",
+      value: function draw_bar() {
+        this.$bar = createSVG('polygon', {
+          points: this.getPolygonPoints(0),
+          x: 0,
+          y: 0,
+          width: this.width,
+          height: this.height,
+          "class": 'bar',
+          append_to: this.bar_group
+        });
+
+        if (this.color) {
+          this.$bar.style.fill = this.color;
+        }
+
+        if (this.invalid) {
+          this.$bar.classList.add('bar-invalid');
+        }
+      }
+    }, {
+      key: "draw_label",
+      value: function draw_label() {
+        var _this = this;
+
+        var padding = 5;
+        var x_coord = padding;
+        createSVG('text', {
+          x: x_coord,
+          y: this.height / 2,
+          innerHTML: this.task.name,
+          "class": 'bar-label big',
+          append_to: this.bar_group
+        }); // labels get BBox in the next tick
+
+        requestAnimationFrame(function () {
+          return _this.update_label_position();
+        });
+      }
+    }, {
+      key: "bind",
+      value: function bind() {
+        var _this2 = this;
+
+        this.setup_click_event();
+        var gantt = this.gantt,
+            children = this.children;
+        this.gantt.$svg.addEventListener('child_task_update', function () {
+          var bars = [];
+          children.forEach(function (_ref) {
+            var id = _ref.id;
+            bars.push(gantt.get_bar(id));
+          });
+
+          var _bars$reduce = bars.reduce(function (_ref2, bar) {
+            var _ref3 = _slicedToArray(_ref2, 2),
+                s = _ref3[0],
+                e = _ref3[1];
+
+            return [Math.min(s, bar.x), Math.max(e, bar.x + bar.width)];
+          }, [Infinity, -Infinity]),
+              _bars$reduce2 = _slicedToArray(_bars$reduce, 2),
+              start = _bars$reduce2[0],
+              end = _bars$reduce2[1];
+
+          _this2.update_bar_position({
+            x: start,
+            width: end - start
+          });
+        });
+      }
+    }, {
+      key: "setup_click_event",
+      value: function setup_click_event() {
+        var _this3 = this;
+
+        $.on(this.bar_group, 'focus ' + this.gantt.options.popup_trigger, function (e) {
+          if (e.type === 'click') {
+            _this3.gantt.trigger_event('click', [_this3.task]);
+
+            _this3.show_popup();
+          }
+
+          _this3.gantt.unselect_all();
+
+          _this3.group.classList.toggle('active');
+        });
+      }
+    }, {
+      key: "show_popup",
+      value: function show_popup() {
+        if (this.gantt.bar_being_dragged) return;
+        var start_date = date_utils.format(this.task._start, 'MMM D', this.gantt.options.language);
+        var end_date = date_utils.format(this.task._end, 'MMM D', this.gantt.options.language);
+        var subTasksInfo = "<ul class=\"parent-task__info\">".concat(this.children.map(function (_ref4) {
+          var name = _ref4.name,
+              _start = _ref4._start,
+              _end = _ref4._end;
+          return "<li class=\"sub-task__info\">\n                        <span class=\"sub-task__name\">".concat(name, "</span>\n                        <span>\n                            (").concat(moment(_start).format('DD.MM'), " \n                            - \n                            ").concat(moment(_end).format('DD.MM'), ")\n                        </span>\n                    </li>");
+        }).join(''), "</ul>");
+
+        var _this$compute_start_e3 = this.compute_start_end_date(),
+            _this$compute_start_e4 = _slicedToArray(_this$compute_start_e3, 2),
+            start = _this$compute_start_e4[0],
+            end = _this$compute_start_e4[1];
+
+        var taskDates = "<span>".concat(moment(start).format('DD.MM'), " - ").concat(moment(end).format('DD.MM'), "</span>");
+        var subtitle = "".concat(subTasksInfo).concat(taskDates);
+        this.gantt.show_popup({
+          target_element: this.$bar,
+          title: this.task.name,
+          subtitle: subtitle,
+          task: this.task
+        });
+      }
+    }, {
+      key: "update_bar_position",
+      value: function update_bar_position(_ref5) {
+        var _ref5$x = _ref5.x,
+            x = _ref5$x === void 0 ? null : _ref5$x,
+            _ref5$y = _ref5.y,
+            y = _ref5$y === void 0 ? null : _ref5$y,
+            _ref5$width = _ref5.width,
+            width = _ref5$width === void 0 ? null : _ref5$width;
+        var bar = this.$bar;
+
+        if (x) {
+          this.x = x;
+        }
+
+        if (y) {
+          this.y = y;
+        }
+
+        this.group.setAttribute('transform', "translate(".concat(this.x, ", ").concat(this.y, ")"));
+
+        if (width) {
+          var min_width = this.min_width;
+          this.width = Math.max(min_width, width);
+          this.update_attr(bar, 'points', this.getPolygonPoints());
+        }
+
+        this.update_label_position();
+      }
+    }, {
+      key: "update_label_position_on_horizontal_scroll",
+      value: function update_label_position_on_horizontal_scroll(_ref6) {
+        var x = _ref6.x,
+            sx = _ref6.sx;
+        var container = document.querySelector('.gantt-container');
+        var label = this.group.querySelector('.bar-label');
+        var img = this.group.querySelector('.bar-img') || '';
+        var img_mask = this.bar_group.querySelector('.img_mask') || '';
+        var barWidthLimit = this.$bar.getX() + this.$bar.getWidth();
+        var newLabelX = label.getX() + x;
+        var newImgX = img && img.getX() + x || 0;
+        var imgWidth = img && img.getBBox().width + 7 || 7;
+        var labelEndX = newLabelX + label.getBBox().width + 7;
+        var viewportCentral = sx + container.clientWidth / 2;
+        if (label.classList.contains('big')) return;
+
+        if (labelEndX < barWidthLimit && x > 0 && labelEndX < viewportCentral) {
+          label.setAttribute('x', newLabelX);
+
+          if (img) {
+            img.setAttribute('x', newImgX);
+            img_mask.setAttribute('x', newImgX);
+          }
+        } else if (newLabelX - imgWidth > this.$bar.getX() && x < 0 && labelEndX > viewportCentral) {
+          label.setAttribute('x', newLabelX);
+
+          if (img) {
+            img.setAttribute('x', newImgX);
+            img_mask.setAttribute('x', newImgX);
+          }
+        }
+      }
+    }, {
+      key: "compute_width",
+      value: function compute_width() {
+        var width = date_utils.diff(this.task._end, this.task._start, 'hour') / this.gantt.options.step * this.gantt.options.column_width;
+        return Math.max(width, this.min_width);
+      }
+    }, {
+      key: "compute_start_end_date",
+      value: function compute_start_end_date() {
+        return this.gantt.getTasksEdgeDates(this.children);
+      }
+    }, {
+      key: "compute_progress",
+      value: function compute_progress() {
+        var progress = this.$bar_progress.getWidth() / this.$bar.getWidth() * 100;
+        return parseInt(progress, 10);
+      }
+    }, {
+      key: "compute_x",
+      value: function compute_x() {
+        var _this$gantt$options = this.gantt.options,
+            step = _this$gantt$options.step,
+            column_width = _this$gantt$options.column_width;
+        var task_start = this.task._start;
+        var gantt_start = this.gantt.gantt_start;
+        var diff = date_utils.diff(task_start, gantt_start, 'hour');
+        var x = diff / step * column_width;
+
+        if (this.gantt.view_is('Month')) {
+          var _diff = date_utils.diff(task_start, gantt_start, 'day');
+
+          x = _diff * column_width / 30;
+        }
+
+        return x;
+      }
+    }, {
+      key: "compute_y",
+      value: function compute_y() {
+        return this.gantt.options.header_height + this.gantt.options.padding + this.task._index * (this.height + this.gantt.options.padding);
+      }
+    }, {
+      key: "get_snap_position",
+      value: function get_snap_position(dx) {
+        var odx = dx,
+            rem,
+            position;
+
+        if (this.gantt.view_is('Week')) {
+          rem = dx % (this.gantt.options.column_width / 7);
+          position = odx - rem + (rem < this.gantt.options.column_width / 14 ? 0 : this.gantt.options.column_width / 7);
+        } else if (this.gantt.view_is('Month')) {
+          rem = dx % (this.gantt.options.column_width / 30);
+          position = odx - rem + (rem < this.gantt.options.column_width / 60 ? 0 : this.gantt.options.column_width / 30);
+        } else {
+          rem = dx % this.gantt.options.column_width;
+          position = odx - rem + (rem < this.gantt.options.column_width / 2 ? 0 : this.gantt.options.column_width);
+        }
+
+        return position;
+      }
+    }, {
+      key: "update_attr",
+      value: function update_attr(element, attr, value) {
+        element.setAttribute(attr, value);
+        return element;
+      }
+    }, {
+      key: "update_label_position",
+      value: function update_label_position() {
+        var label = this.group.querySelector('.bar-label');
+        var padding = 5;
+        var labelWidth = label.getBBox().width;
+
+        if (labelWidth > this.width - 40) {
+          label.setAttribute('x', String(this.width + padding));
+          label.setAttribute('y', String(this.height / 2));
+        } else {
+          label.setAttribute('x', String(this.width / 2 - labelWidth / 2));
+          label.setAttribute('y', String(this.height / 2 + padding));
+        }
+      }
+    }, {
+      key: "min_width",
+      get: function get() {
+        var gantt = this.gantt;
+        return gantt.view_is('Day') ? gantt.options.column_width - 1e-3 : 20;
+      }
+    }]);
+
+    return ParentBar;
+  }();
+
   var Gantt =
   /*#__PURE__*/
   function () {
@@ -6421,6 +6795,7 @@
 
         tasks = JSON.parse(JSON.stringify(tasks)); // prepare tasks
 
+        this.childTasksMap = new Map();
         this.tasks = tasks.map(function (task, i) {
           // convert to Date objects
           task._start = _this.calendar.placeDateInWorkingRange(moment(task.start).startOf('day'), true);
@@ -6461,6 +6836,12 @@
 
           if (!task.start || !task.end) {
             task.invalid = true;
+          }
+
+          if (task.parentId) {
+            var children = _this.childTasksMap.get(task.parentId) || [];
+
+            _this.childTasksMap.set(task.parentId, [].concat(_toConsumableArray(children), [task]));
           } // dependencies
 
 
@@ -7021,7 +7402,7 @@
         var _this6 = this;
 
         this.bars = this.tasks.map(function (task) {
-          var bar = new Bar(_this6, task);
+          var bar = _this6.childTasksMap.has(task.id) ? new ParentBar(_this6, task) : new Bar(_this6, task);
 
           _this6.layers.bar.appendChild(bar.group);
 
@@ -7650,22 +8031,53 @@
         return offset;
       }
     }, {
+      key: "getTasksEdgeDates",
+      value: function getTasksEdgeDates(tasks) {
+        return tasks.reduce(function (_ref7, _ref8) {
+          var _ref9 = _slicedToArray(_ref7, 2),
+              prevStart = _ref9[0],
+              prevEnd = _ref9[1];
+
+          var _start = _ref8._start,
+              _end = _ref8._end;
+          return [Math.min(prevStart, _start), Math.max(prevEnd, _end)];
+        }, [Infinity, -Infinity]).map(function (timestamp) {
+          return new Date(timestamp);
+        });
+      }
+    }, {
       key: "getTasks",
       value: function getTasks() {
-        return this.tasks.map(function (_ref7) {
-          var id = _ref7.id,
-              name = _ref7.name,
-              start = _ref7._start,
-              end = _ref7._end,
-              duration = _ref7.duration,
-              dependencies = _ref7.dependencies;
+        var _this14 = this;
+
+        return this.tasks.map(function (_ref10) {
+          var id = _ref10.id,
+              name = _ref10.name,
+              _start = _ref10._start,
+              _end = _ref10._end,
+              duration = _ref10.duration,
+              dependencies = _ref10.dependencies,
+              parentId = _ref10.parentId;
+          var start = _start;
+          var end = _end;
+
+          if (_this14.childTasksMap.has(id)) {
+            var _this14$getTasksEdgeD = _this14.getTasksEdgeDates(_this14.childTasksMap.get(id));
+
+            var _this14$getTasksEdgeD2 = _slicedToArray(_this14$getTasksEdgeD, 2);
+
+            start = _this14$getTasksEdgeD2[0];
+            end = _this14$getTasksEdgeD2[1];
+          }
+
           return {
             id: id,
             name: name,
             start: start,
             end: end,
             duration: duration,
-            dependencies: _toConsumableArray(dependencies)
+            dependencies: _toConsumableArray(dependencies),
+            parentId: parentId
           };
         });
       }
@@ -7678,10 +8090,10 @@
     return task.name + '_' + Math.random().toString(36).slice(2, 12);
   }
 
-  function getOffset(_ref8) {
-    var currentTarget = _ref8.currentTarget,
-        clientX = _ref8.clientX,
-        clientY = _ref8.clientY;
+  function getOffset(_ref11) {
+    var currentTarget = _ref11.currentTarget,
+        clientX = _ref11.clientX,
+        clientY = _ref11.clientY;
 
     var _currentTarget$getBou = currentTarget.getBoundingClientRect(),
         left = _currentTarget$getBou.left,
